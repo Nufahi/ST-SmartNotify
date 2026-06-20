@@ -1,0 +1,374 @@
+/* ============================================================
+   Smart Notify — UI styles
+   Uses SillyTavern theme CSS variables where possible.
+   ============================================================ */
+
+:root {
+    --sn-bg: var(--SmartThemeBlurTintColor, rgba(20, 20, 26, 0.92));
+    --sn-fg: var(--SmartThemeBodyColor, #e8e8ea);
+    --sn-accent: var(--SmartThemeQuoteColor, #6c8cff);
+    --sn-border: var(--SmartThemeBorderColor, rgba(255, 255, 255, 0.12));
+    --sn-muted: color-mix(in srgb, var(--sn-fg) 55%, transparent);
+}
+
+/* ---------- Floating bell button ---------- */
+#smart-notify-fab {
+    position: fixed;
+    left: 16px;
+    bottom: 16px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--sn-accent);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    cursor: pointer;
+    z-index: 9998;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    user-select: none;
+}
+#smart-notify-fab:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+#smart-notify-fab:active { transform: scale(0.96); }
+
+.sn-fab-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 9px;
+    background: #e74c3c;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+    box-shadow: 0 0 0 2px var(--sn-bg);
+}
+
+/* ---------- Overlay ---------- */
+#smart-notify-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    z-index: 9998;
+}
+#smart-notify-overlay.show { opacity: 1; pointer-events: auto; }
+
+/* ---------- Drawer ---------- */
+#smart-notify-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 380px;
+    max-width: 92vw;
+    background: var(--sn-bg);
+    backdrop-filter: blur(12px);
+    color: var(--sn-fg);
+    border-left: 1px solid var(--sn-border);
+    box-shadow: -8px 0 30px rgba(0, 0, 0, 0.45);
+    transform: translateX(105%);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    font-size: 14px;
+}
+#smart-notify-drawer.open { transform: translateX(0); }
+
+/* ---------- Header ---------- */
+.sn-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--sn-border);
+    flex: 0 0 auto;
+}
+.sn-title {
+    font-weight: 700;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.sn-title i { color: var(--sn-accent); }
+.sn-header-actions { display: flex; gap: 6px; }
+
+.sn-icon-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--sn-fg);
+    transition: background 0.15s ease;
+}
+.sn-icon-btn:hover { background: rgba(255, 255, 255, 0.1); }
+
+/* ---------- Tabs ---------- */
+.sn-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--sn-border);
+    flex: 0 0 auto;
+}
+.sn-tab {
+    flex: 1;
+    text-align: center;
+    padding: 10px 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--sn-muted);
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s ease, border-color 0.15s ease;
+    user-select: none;
+}
+.sn-tab i { margin-right: 4px; }
+.sn-tab:hover { color: var(--sn-fg); }
+.sn-tab.active {
+    color: var(--sn-accent);
+    border-bottom-color: var(--sn-accent);
+    font-weight: 600;
+}
+
+/* ---------- Body / panels ---------- */
+.sn-body {
+    flex: 1 1 auto;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.sn-panel {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* ---------- Toolbar (log) ---------- */
+.sn-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.sn-type-filters { display: flex; gap: 6px; flex-wrap: wrap; }
+.sn-filter-chip {
+    width: 30px;
+    height: 30px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--sn-border);
+    opacity: 0.4;
+    transition: opacity 0.15s, background 0.15s;
+}
+.sn-filter-chip.on { opacity: 1; }
+.sn-chip-success.on { color: #5cb85c; }
+.sn-chip-info.on { color: #5bc0de; }
+.sn-chip-warning.on { color: #f0ad4e; }
+.sn-chip-error.on { color: #e74c3c; }
+.sn-chip-blocked.on { color: var(--sn-muted); }
+
+/* ---------- Log items ---------- */
+.sn-log-list { display: flex; flex-direction: column; gap: 8px; }
+.sn-log-item {
+    display: flex;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--sn-border);
+    border-left: 3px solid var(--sn-border);
+    align-items: flex-start;
+    transition: background 0.15s;
+}
+.sn-log-item:hover { background: rgba(255, 255, 255, 0.07); }
+.sn-log-item.sn-type-success { border-left-color: #5cb85c; }
+.sn-log-item.sn-type-info { border-left-color: #5bc0de; }
+.sn-log-item.sn-type-warning { border-left-color: #f0ad4e; }
+.sn-log-item.sn-type-error { border-left-color: #e74c3c; }
+.sn-log-item.sn-is-blocked { opacity: 0.55; }
+
+.sn-log-icon { font-size: 16px; padding-top: 1px; }
+.sn-type-success .sn-log-icon { color: #5cb85c; }
+.sn-type-info .sn-log-icon { color: #5bc0de; }
+.sn-type-warning .sn-log-icon { color: #f0ad4e; }
+.sn-type-error .sn-log-icon { color: #e74c3c; }
+
+.sn-log-content { flex: 1; min-width: 0; }
+.sn-log-title { font-weight: 600; margin-bottom: 2px; word-break: break-word; }
+.sn-log-msg { font-size: 13px; word-break: break-word; color: var(--sn-fg); }
+.sn-log-meta {
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--sn-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.sn-blocked-badge {
+    color: #e74c3c;
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    padding: 0 4px;
+    font-size: 10px;
+}
+.sn-log-actions { display: flex; align-items: center; }
+.sn-quick-mute:hover { color: #e74c3c; }
+
+/* ---------- Empty state ---------- */
+.sn-empty {
+    text-align: center;
+    color: var(--sn-muted);
+    padding: 40px 10px;
+    font-size: 13px;
+    line-height: 1.6;
+}
+.sn-empty i { font-size: 28px; opacity: 0.5; }
+
+/* ---------- Rules: add form ---------- */
+.sn-rule-add {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--sn-border);
+}
+.sn-rule-add-row {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.sn-rule-add-row .text_pole { flex: 1; min-width: 90px; }
+.sn-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.sn-checkbox code, .sn-checkbox span { font-family: monospace; }
+
+/* ---------- Rules: list ---------- */
+.sn-rules-list { display: flex; flex-direction: column; gap: 8px; }
+.sn-rule-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--sn-border);
+    border-left: 3px solid var(--sn-border);
+}
+.sn-rule-item.sn-rule-mute { border-left-color: #e74c3c; }
+.sn-rule-item.sn-rule-allow { border-left-color: #5cb85c; }
+.sn-rule-item.sn-rule-off { opacity: 0.5; }
+.sn-rule-info { flex: 1; min-width: 0; }
+.sn-rule-pattern {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    word-break: break-word;
+}
+.sn-rule-pattern code {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+.sn-rule-regex-tag {
+    background: var(--sn-accent);
+    color: #fff;
+    border-radius: 4px;
+    padding: 0 4px;
+    font-size: 11px;
+    font-family: monospace;
+}
+.sn-rule-sub { font-size: 11px; color: var(--sn-muted); margin-top: 3px; }
+.sn-rule-del:hover { color: #e74c3c; }
+
+/* ---------- Toggle switch ---------- */
+.sn-switch {
+    position: relative;
+    display: inline-block;
+    width: 38px;
+    height: 20px;
+    flex: 0 0 auto;
+    cursor: pointer;
+}
+.sn-switch input { opacity: 0; width: 0; height: 0; }
+.sn-slider {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    transition: background 0.2s;
+}
+.sn-slider::before {
+    content: "";
+    position: absolute;
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+}
+.sn-switch input:checked + .sn-slider { background: var(--sn-accent); }
+.sn-switch input:checked + .sn-slider::before { transform: translateX(18px); }
+
+/* ---------- Appearance form ---------- */
+.sn-appearance-form { display: flex; flex-direction: column; gap: 8px; }
+.sn-appearance-form label { font-size: 13px; color: var(--sn-fg); margin-top: 4px; }
+.sn-appearance-form label small { color: var(--sn-muted); }
+.sn-appearance-form input[type="range"] { width: 100%; accent-color: var(--sn-accent); }
+.sn-big-toggle {
+    font-weight: 600;
+    font-size: 14px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--sn-border);
+    margin-bottom: 4px;
+}
+.sn-ap-fields { display: flex; flex-direction: column; gap: 8px; }
+.sn-ap-fields.sn-disabled { opacity: 0.45; pointer-events: none; }
+.sn-row2 { display: flex; gap: 8px; }
+.sn-row2 > div { flex: 1; }
+.sn-hidden { display: none !important; }
+.sn-ap-buttons { display: flex; gap: 8px; margin-top: 10px; }
+.sn-ap-buttons .menu_button { flex: 1; justify-content: center; }
+
+/* ---------- Scrollbar ---------- */
+.sn-panel::-webkit-scrollbar { width: 8px; }
+.sn-panel::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 4px;
+}
+
+/* ---------- Mobile ---------- */
+@media (max-width: 500px) {
+    #smart-notify-drawer { width: 100vw; max-width: 100vw; }
+}

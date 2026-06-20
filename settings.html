@@ -1,0 +1,51 @@
+<div class="smart-notify-settings">
+    <div class="inline-drawer">
+        <div class="inline-drawer-toggle inline-drawer-header">
+            <b><i class="fa-solid fa-bell"></i> Smart Notify</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+        </div>
+        <div class="inline-drawer-content">
+            <div class="flex-container">
+                <input id="smart_notify_enabled" type="checkbox" />
+                <label for="smart_notify_enabled">
+                    <i class="fa-solid fa-shield-halved"></i> <span>Enable notification filtering</span>
+                </label>
+            </div>
+            <hr>
+            <small><i class="fa-solid fa-volume-xmark"></i> <b>Globally mute by type</b></small>
+            <div class="flex-container">
+                <input id="smart_notify_mute_success" type="checkbox" />
+                <label for="smart_notify_mute_success"><i class="fa-solid fa-circle-check"></i> <span>Mute Success</span></label>
+            </div>
+            <div class="flex-container">
+                <input id="smart_notify_mute_info" type="checkbox" />
+                <label for="smart_notify_mute_info"><i class="fa-solid fa-circle-info"></i> <span>Mute Info</span></label>
+            </div>
+            <div class="flex-container">
+                <input id="smart_notify_mute_warning" type="checkbox" />
+                <label for="smart_notify_mute_warning"><i class="fa-solid fa-triangle-exclamation"></i> <span>Mute Warning</span></label>
+            </div>
+            <div class="flex-container">
+                <input id="smart_notify_mute_error" type="checkbox" />
+                <label for="smart_notify_mute_error"><i class="fa-solid fa-circle-xmark"></i> <span>Mute Error</span></label>
+            </div>
+            <hr>
+            <div class="flex-container">
+                <input id="smart_notify_autoopen" type="checkbox" />
+                <label for="smart_notify_autoopen">
+                    <i class="fa-solid fa-window-restore"></i> <span>Auto-open panel on new notification</span>
+                </label>
+            </div>
+            <hr>
+            <div id="smart_notify_open_drawer" class="menu_button menu_button_icon">
+                <i class="fa-solid fa-sliders"></i>
+                <span>Open Smart Notify panel</span>
+            </div>
+            <hr>
+            <small>
+                <i class="fa-solid fa-circle-info"></i>
+                Use the floating bell button (bottom-left) to open the panel with the live log, per-notification mute rules, and appearance controls.
+            </small>
+        </div>
+    </div>
+</div>
