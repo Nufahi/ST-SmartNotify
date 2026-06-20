@@ -25,8 +25,8 @@ you don't want — and restyle the ones you keep.
 ## Usage
 
 1. Install the extension (see below).
-2. Click the **floating bell button** (bottom-left) to open the panel, or use
-   *Extensions → Smart Notify → Open panel*.
+2. Open the panel from the **wand menu** (the magic-wand icon near the chat bar)
+   → **Smart Notify**, or via *Extensions → Smart Notify → Open panel*.
 3. **Log tab** — watch notifications arrive; click the mute icon to silence
    anything like it.
 4. **Rules tab** — add precise text/regex rules, toggle or delete them.

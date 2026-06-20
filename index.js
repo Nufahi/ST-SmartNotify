@@ -291,15 +291,6 @@ jQuery(async function () {
         error: 'fa-circle-xmark',
     };
 
-    // Trigger button (floating action button)
-    const $fab = $(`
-        <div id="smart-notify-fab" title="Smart Notify">
-            <i class="fa-solid fa-bell"></i>
-            <span class="sn-fab-badge" style="display:none;">0</span>
-        </div>
-    `);
-    $('body').append($fab);
-
     const $overlay = $('<div id="smart-notify-overlay"></div>');
     $('body').append($overlay);
 
@@ -371,15 +362,69 @@ jQuery(async function () {
     }
     function toggleDrawer() { drawerOpen ? closeDrawer() : openDrawer(); }
 
-    $fab.on('click', toggleDrawer);
     $overlay.on('click', closeDrawer);
     $drawer.on('click', '#sn-close', closeDrawer);
 
-    // ----- badge (unseen count) -----
+    // ----- wand menu button (entry point) -----
+    function closeExtensionsMenu() {
+        try { $('#extensionsMenu').fadeOut?.(150); } catch (e) { /* noop */ }
+        const menu = document.getElementById('extensionsMenu');
+        if (menu) menu.style.display = 'none';
+    }
+
+    function addWandButton() {
+        const container = document.getElementById('extensionsMenu')
+            || document.getElementById('gallery_wand_container');
+        if (!(container instanceof HTMLElement)) return false;
+        if (document.getElementById('smart_notify_wand_button')) return true;
+
+        const btn = document.createElement('div');
+        btn.id = 'smart_notify_wand_button';
+        btn.classList.add('list-group-item', 'flex-container', 'flexGap5', 'interactable');
+        btn.tabIndex = 0;
+        btn.setAttribute('role', 'button');
+        btn.style.cursor = 'pointer';
+        btn.title = 'Smart Notify';
+
+        const icon = document.createElement('div');
+        icon.classList.add('fa-solid', 'fa-bell', 'extensionsMenuExtensionButton');
+        const text = document.createElement('span');
+        text.textContent = 'Smart Notify';
+        const badge = document.createElement('span');
+        badge.id = 'smart_notify_wand_badge';
+        badge.className = 'sn-wand-badge';
+        badge.style.display = 'none';
+
+        btn.appendChild(icon);
+        btn.appendChild(text);
+        btn.appendChild(badge);
+
+        let lastFire = 0;
+        const activate = (e) => {
+            e.preventDefault();
+            const now = Date.now();
+            if (now - lastFire < 400) return;
+            lastFire = now;
+            openDrawer();
+            closeExtensionsMenu();
+        };
+        btn.addEventListener('click', activate);
+        btn.addEventListener('touchend', activate, { passive: false });
+
+        container.appendChild(btn);
+        return true;
+    }
+    // The wand container may not exist yet at load — retry a few times.
+    let wandTries = 0;
+    const wandTimer = setInterval(() => {
+        if (addWandButton() || ++wandTries > 40) clearInterval(wandTimer);
+    }, 500);
+
+    // ----- badge (unseen count, shown on the wand entry) -----
     let unseen = 0;
     function updateBadge(reset) {
         if (reset) unseen = 0;
-        const $b = $fab.find('.sn-fab-badge');
+        const $b = $('#smart_notify_wand_badge');
         if (unseen > 0) { $b.text(unseen > 99 ? '99+' : unseen).show(); }
         else $b.hide();
     }
@@ -749,7 +794,8 @@ jQuery(async function () {
     window.__smartNotifyDispose = function () {
         try { restoreToastr(); } catch (e) { /* noop */ }
         clearInterval(wireTimer);
-        $('#smart-notify-fab, #smart-notify-drawer, #smart-notify-overlay, #smart-notify-toast-style').remove();
+        clearInterval(wandTimer);
+        $('#smart-notify-drawer, #smart-notify-overlay, #smart-notify-toast-style, #smart_notify_wand_button').remove();
         $('.smart-notify-settings').remove();
         window.__smartNotifyInitialized = false;
     };
