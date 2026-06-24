@@ -43,6 +43,10 @@ you don't want — and restyle the ones you keep.
   **Termux**/server log. Choose to log shown, blocked, or all. There's also a
   one-tap **Dump log to console** button.
 - **Export / import** — back up and restore all rules and settings as JSON.
+- **Bilingual (EN / RU)** — the UI auto-detects your SillyTavern locale; Russian
+  users get Russian, everyone else gets English. Strings live in `i18n/`.
+- **Polished settings block** — a clean card in the **Extensions** tab with the
+  open-panel button and grouped toggles (general, mute-by-type, console).
 - Everything persists in your SillyTavern settings.
 
 ## Usage

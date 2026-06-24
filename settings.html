@@ -5,59 +5,87 @@
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <div class="flex-container">
-                <input id="smart_notify_enabled" type="checkbox" />
-                <label for="smart_notify_enabled">
-                    <i class="fa-solid fa-shield-halved"></i> <span>Enable notification filtering</span>
-                </label>
+
+            <div class="sn_settings_card">
+                <p class="sn_settings_intro" data-i18n="settings.intro">Full control over toasts: mute, allow, rewrite and restyle notifications — and pull the detailed browser-console output into a readable log.</p>
+
+                <button id="smart_notify_open_drawer" type="button" class="sn_settings_primary interactable">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span data-i18n="settings.open">Open Smart Notify panel</span>
+                </button>
+
+                <div class="sn_settings_section">
+                    <h4 class="sn_settings_heading" data-i18n="settings.generalHeading">General</h4>
+
+                    <label class="sn_set_row sn_set_toggle" for="smart_notify_enabled">
+                        <span class="sn_set_text">
+                            <span class="sn_set_label" data-i18n="settings.enabled">Enable notification filtering</span>
+                            <span class="sn_set_desc" data-i18n="settings.enabledDesc">Master switch. When off, every toast passes through untouched.</span>
+                        </span>
+                        <input id="smart_notify_enabled" type="checkbox" />
+                    </label>
+
+                    <label class="sn_set_row sn_set_toggle" for="smart_notify_autoopen">
+                        <span class="sn_set_text">
+                            <span class="sn_set_label" data-i18n="settings.autoopen">Auto-open panel on new notification</span>
+                            <span class="sn_set_desc" data-i18n="settings.autoopenDesc">Pop the panel open whenever a new toast arrives.</span>
+                        </span>
+                        <input id="smart_notify_autoopen" type="checkbox" />
+                    </label>
+                </div>
+
+                <div class="sn_settings_section">
+                    <h4 class="sn_settings_heading" data-i18n="settings.muteHeading">Globally mute by type</h4>
+
+                    <label class="sn_set_row sn_set_toggle" for="smart_notify_mute_success">
+                        <span class="sn_set_text">
+                            <span class="sn_set_label"><i class="fa-solid fa-circle-check sn_ic_success"></i> <span data-i18n="settings.muteSuccess">Mute Success</span></span>
+                        </span>
+                        <input id="smart_notify_mute_success" type="checkbox" />
+                    </label>
+                    <label class="sn_set_row sn_set_toggle" for="smart_notify_mute_info">
+                        <span class="sn_set_text">
+                            <span class="sn_set_label"><i class="fa-solid fa-circle-info sn_ic_info"></i> <span data-i18n="settings.muteInfo">Mute Info</span></span>
+                        </span>
+                        <input id="smart_notify_mute_info" type="checkbox" />
+                    </label>
+                    <label class="sn_set_row sn_set_toggle" for="smart_notify_mute_warning">
+                        <span class="sn_set_text">
+                            <span class="sn_set_label"><i class="fa-solid fa-triangle-exclamation sn_ic_warning"></i> <span data-i18n="settings.muteWarning">Mute Warning</span></span>
+                        </span>
+                        <input id="smart_notify_mute_warning" type="checkbox" />
+                    </label>
+                    <label class="sn_set_row sn_set_toggle" for="smart_notify_mute_error">
+                        <span class="sn_set_text">
+                            <span class="sn_set_label"><i class="fa-solid fa-circle-xmark sn_ic_error"></i> <span data-i18n="settings.muteError">Mute Error</span></span>
+                        </span>
+                        <input id="smart_notify_mute_error" type="checkbox" />
+                    </label>
+                </div>
+
+                <div class="sn_settings_section">
+                    <h4 class="sn_settings_heading" data-i18n="settings.consoleHeading">Console</h4>
+
+                    <label class="sn_set_row sn_set_toggle" for="smart_notify_console_capture">
+                        <span class="sn_set_text">
+                            <span class="sn_set_label"><i class="fa-solid fa-terminal"></i> <span data-i18n="settings.consoleCapture">Capture browser console into the Log</span></span>
+                            <span class="sn_set_desc" data-i18n="settings.consoleCaptureDesc">Toasts are terse; the full error details are usually printed to the console. This pulls those detailed lines into the Log tab.</span>
+                        </span>
+                        <input id="smart_notify_console_capture" type="checkbox" />
+                    </label>
+
+                    <label class="sn_set_row sn_set_toggle" for="smart_notify_console_mirror">
+                        <span class="sn_set_text">
+                            <span class="sn_set_label"><i class="fa-solid fa-share-from-square"></i> <span data-i18n="settings.consoleMirror">Mirror notifications to console (devtools / Termux)</span></span>
+                            <span class="sn_set_desc" data-i18n="settings.consoleMirrorDesc">Send each notification's full text out to the console.</span>
+                        </span>
+                        <input id="smart_notify_console_mirror" type="checkbox" />
+                    </label>
+                </div>
+
+                <p class="sn_settings_foot" data-i18n="settings.hint">Open the panel from the wand menu &rarr; Smart Notify, or with the button above. The panel is mobile-friendly and has tabs for the live Log, mute/allow/rewrite Rules, appearance &amp; color Look options, plus More (capture console, anti-spam, import/export).</p>
             </div>
-            <hr>
-            <small><i class="fa-solid fa-volume-xmark"></i> <b>Globally mute by type</b></small>
-            <div class="flex-container">
-                <input id="smart_notify_mute_success" type="checkbox" />
-                <label for="smart_notify_mute_success"><i class="fa-solid fa-circle-check"></i> <span>Mute Success</span></label>
-            </div>
-            <div class="flex-container">
-                <input id="smart_notify_mute_info" type="checkbox" />
-                <label for="smart_notify_mute_info"><i class="fa-solid fa-circle-info"></i> <span>Mute Info</span></label>
-            </div>
-            <div class="flex-container">
-                <input id="smart_notify_mute_warning" type="checkbox" />
-                <label for="smart_notify_mute_warning"><i class="fa-solid fa-triangle-exclamation"></i> <span>Mute Warning</span></label>
-            </div>
-            <div class="flex-container">
-                <input id="smart_notify_mute_error" type="checkbox" />
-                <label for="smart_notify_mute_error"><i class="fa-solid fa-circle-xmark"></i> <span>Mute Error</span></label>
-            </div>
-            <hr>
-            <div class="flex-container">
-                <input id="smart_notify_autoopen" type="checkbox" />
-                <label for="smart_notify_autoopen">
-                    <i class="fa-solid fa-window-restore"></i> <span>Auto-open panel on new notification</span>
-                </label>
-            </div>
-            <div class="flex-container">
-                <input id="smart_notify_console_capture" type="checkbox" />
-                <label for="smart_notify_console_capture">
-                    <i class="fa-solid fa-terminal"></i> <span>Capture browser console into the Log (full error details)</span>
-                </label>
-            </div>
-            <div class="flex-container">
-                <input id="smart_notify_console_mirror" type="checkbox" />
-                <label for="smart_notify_console_mirror">
-                    <i class="fa-solid fa-share-from-square"></i> <span>Mirror notifications to console (devtools / Termux)</span>
-                </label>
-            </div>
-            <hr>
-            <div id="smart_notify_open_drawer" class="menu_button menu_button_icon">
-                <i class="fa-solid fa-sliders"></i>
-                <span>Open Smart Notify panel</span>
-            </div>
-            <hr>
-            <small>
-                <i class="fa-solid fa-circle-info"></i>
-                Open the panel from the wand (<i class="fa-solid fa-wand-magic-sparkles"></i>) menu &rarr; <b>Smart Notify</b>, or with the button above. The panel is mobile-friendly (full-screen on phones) and has tabs for the live <b>Log</b>, mute/allow/<b>rewrite</b> <b>Rules</b>, appearance &amp; color <b>Look</b> options, plus <b>More</b> (capture console into the log, console mirror, anti-spam, import/export).
-            </small>
+
         </div>
     </div>
 </div>

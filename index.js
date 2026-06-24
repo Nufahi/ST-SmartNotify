@@ -1,8 +1,107 @@
 const MODULE_NAME = 'ST-SmartNotify';
 const LOG_PREFIX = '[Smart Notify]';
+const EXT_PATH = `scripts/extensions/third-party/${MODULE_NAME}`;
+
+/* ============================================================
+ * I18N — lightweight translation layer.
+ * Strings live in i18n/<lang>.json next to this file. The language is
+ * auto-detected from SillyTavern's UI locale, falling back to navigator
+ * language and finally to English. RU users get Russian, everyone else EN.
+ * ============================================================ */
+const I18N_FALLBACK = 'en';
+const I18N_SUPPORTED = ['en', 'ru'];
+let I18N_LANG = I18N_FALLBACK;
+let I18N_STRINGS = {};
+let I18N_FALLBACK_STRINGS = {};
+
+function i18nDetectLang() {
+    const candidates = [];
+    try {
+        const c = SillyTavern?.getContext?.();
+        if (c) {
+            if (typeof c.getCurrentLocale === 'function') candidates.push(c.getCurrentLocale());
+            candidates.push(c?.powerUserSettings?.locale);
+            candidates.push(c?.accountStorage?.getItem?.('language'));
+        }
+    } catch (e) { /* ignore */ }
+    try { candidates.push(localStorage.getItem('language')); } catch (e) { /* ignore */ }
+    try { candidates.push(navigator.language || navigator.userLanguage); } catch (e) { /* ignore */ }
+
+    for (const raw of candidates) {
+        if (typeof raw !== 'string' || !raw) continue;
+        const lang = raw.toLowerCase().split(/[-_]/)[0];
+        if (I18N_SUPPORTED.includes(lang)) return lang;
+    }
+    return I18N_FALLBACK;
+}
+
+async function i18nLoad() {
+    I18N_LANG = i18nDetectLang();
+    // Load English first as the fallback so a missing key never surfaces a raw key.
+    try {
+        const res = await fetch(`/${EXT_PATH}/i18n/${I18N_FALLBACK}.json`);
+        if (res.ok) I18N_FALLBACK_STRINGS = await res.json();
+    } catch (e) {
+        console.warn(`${LOG_PREFIX} i18n: failed to load fallback (${I18N_FALLBACK})`, e);
+    }
+    if (I18N_LANG === I18N_FALLBACK) {
+        I18N_STRINGS = I18N_FALLBACK_STRINGS;
+        return;
+    }
+    try {
+        const res = await fetch(`/${EXT_PATH}/i18n/${I18N_LANG}.json`);
+        if (res.ok) {
+            I18N_STRINGS = await res.json();
+        } else {
+            I18N_STRINGS = I18N_FALLBACK_STRINGS;
+            I18N_LANG = I18N_FALLBACK;
+        }
+    } catch (e) {
+        console.warn(`${LOG_PREFIX} i18n: failed to load ${I18N_LANG}`, e);
+        I18N_STRINGS = I18N_FALLBACK_STRINGS;
+        I18N_LANG = I18N_FALLBACK;
+    }
+}
+
+/** Translate a key, substituting {{var}} placeholders from params. Falls back
+ *  to English, then to the raw key so missing strings stay visible. */
+function t(key, params) {
+    let str = I18N_STRINGS[key];
+    if (str === undefined) str = I18N_FALLBACK_STRINGS[key];
+    if (str === undefined) return key;
+    if (!params) return str;
+    return str.replace(/\{\{(\w+)\}\}/g, (m, k) => (k in params ? String(params[k]) : m));
+}
+
+/** Apply translations to a DOM subtree using data-i18n attributes:
+ *    data-i18n="key"             -> textContent
+ *    data-i18n-title="key"       -> title attribute
+ *    data-i18n-placeholder="key" -> placeholder attribute
+ *    data-i18n-aria-label="key"  -> aria-label attribute */
+function i18nApplyDom(root) {
+    if (!root) return;
+    root = root.jquery ? root[0] : root;
+    if (!root || !root.querySelectorAll) return;
+    root.querySelectorAll('[data-i18n]').forEach((el) => {
+        el.textContent = t(el.getAttribute('data-i18n'));
+    });
+    const attrs = [
+        ['data-i18n-title', 'title'],
+        ['data-i18n-placeholder', 'placeholder'],
+        ['data-i18n-aria-label', 'aria-label'],
+    ];
+    for (const [dataAttr, realAttr] of attrs) {
+        root.querySelectorAll(`[${dataAttr}]`).forEach((el) => {
+            el.setAttribute(realAttr, t(el.getAttribute(dataAttr)));
+        });
+    }
+}
 
 jQuery(async function () {
     'use strict';
+
+    // Load translations before building any UI.
+    await i18nLoad();
 
     // ---------------------------------------------------------------------
     // Prevent double initialization
@@ -565,50 +664,50 @@ jQuery(async function () {
             <div id="smart-notify-backdrop"></div>
             <div id="smart-notify-drawer">
                 <div class="sn-header">
-                    <div class="sn-title"><i class="fa-solid fa-bell"></i> Smart Notify</div>
+                    <div class="sn-title"><i class="fa-solid fa-bell"></i> <span data-i18n="panel.title">Smart Notify</span></div>
                     <div class="sn-header-actions">
-                        <div class="sn-icon-btn" id="sn-master-toggle" title="Enable/disable filtering"></div>
-                        <div class="sn-icon-btn" id="sn-close" title="Close"><i class="fa-solid fa-xmark"></i></div>
+                        <div class="sn-icon-btn" id="sn-master-toggle" data-i18n-title="panel.masterToggle" title="Enable/disable filtering"></div>
+                        <div class="sn-icon-btn" id="sn-close" data-i18n-title="panel.close" title="Close"><i class="fa-solid fa-xmark"></i></div>
                     </div>
                 </div>
                 <div class="sn-tabs">
-                    <div class="sn-tab active" data-tab="log"><i class="fa-solid fa-list"></i> Log</div>
-                    <div class="sn-tab" data-tab="rules"><i class="fa-solid fa-filter"></i> Rules</div>
-                    <div class="sn-tab" data-tab="appearance"><i class="fa-solid fa-palette"></i> Look</div>
-                    <div class="sn-tab" data-tab="more"><i class="fa-solid fa-sliders"></i> More</div>
+                    <div class="sn-tab active" data-tab="log"><i class="fa-solid fa-list"></i> <span data-i18n="tab.log">Log</span></div>
+                    <div class="sn-tab" data-tab="rules"><i class="fa-solid fa-filter"></i> <span data-i18n="tab.rules">Rules</span></div>
+                    <div class="sn-tab" data-tab="appearance"><i class="fa-solid fa-palette"></i> <span data-i18n="tab.look">Look</span></div>
+                    <div class="sn-tab" data-tab="more"><i class="fa-solid fa-sliders"></i> <span data-i18n="tab.more">More</span></div>
                 </div>
                 <div class="sn-body">
                     <div class="sn-panel" data-panel="log">
                         <div class="sn-toolbar">
                             <div class="sn-type-filters"></div>
                             <div class="sn-toolbar-actions">
-                                <div class="sn-icon-btn" id="sn-dump-console" title="Dump log to console"><i class="fa-solid fa-terminal"></i></div>
-                                <div class="sn-icon-btn" id="sn-clear-log" title="Clear log"><i class="fa-solid fa-trash"></i></div>
+                                <div class="sn-icon-btn" id="sn-dump-console" data-i18n-title="log.dumpConsole" title="Dump log to console"><i class="fa-solid fa-terminal"></i></div>
+                                <div class="sn-icon-btn" id="sn-clear-log" data-i18n-title="log.clear" title="Clear log"><i class="fa-solid fa-trash"></i></div>
                             </div>
                         </div>
                         <div class="sn-log-list"></div>
                     </div>
                     <div class="sn-panel" data-panel="rules" style="display:none;">
                         <div class="sn-rule-add">
-                            <input type="text" class="text_pole" id="sn-rule-pattern" placeholder="Text or /regex/i to match..." />
-                            <input type="text" class="text_pole sn-hidden" id="sn-rule-replacement" placeholder="Replacement text (use $1 for regex groups)..." />
+                            <input type="text" class="text_pole" id="sn-rule-pattern" data-i18n-placeholder="rules.patternPh" placeholder="Text or /regex/i to match..." />
+                            <input type="text" class="text_pole sn-hidden" id="sn-rule-replacement" data-i18n-placeholder="rules.replacementPh" placeholder="Replacement text (use $1 for regex groups)..." />
                             <div class="sn-rule-add-row">
                                 <select class="text_pole" id="sn-rule-type">
-                                    <option value="any">Any type</option>
-                                    <option value="success">Success</option>
-                                    <option value="info">Info</option>
-                                    <option value="warning">Warning</option>
-                                    <option value="error">Error</option>
+                                    <option value="any" data-i18n="rules.typeAny">Any type</option>
+                                    <option value="success" data-i18n="rules.typeSuccess">Success</option>
+                                    <option value="info" data-i18n="rules.typeInfo">Info</option>
+                                    <option value="warning" data-i18n="rules.typeWarning">Warning</option>
+                                    <option value="error" data-i18n="rules.typeError">Error</option>
                                 </select>
                                 <select class="text_pole" id="sn-rule-action">
-                                    <option value="mute">Mute (block)</option>
-                                    <option value="allow">Allow (force show)</option>
-                                    <option value="rewrite">Rewrite text</option>
+                                    <option value="mute" data-i18n="rules.actionMute">Mute (block)</option>
+                                    <option value="allow" data-i18n="rules.actionAllow">Allow (force show)</option>
+                                    <option value="rewrite" data-i18n="rules.actionRewrite">Rewrite text</option>
                                 </select>
-                                <label class="sn-checkbox" title="Treat pattern as regex">
+                                <label class="sn-checkbox" data-i18n-title="rules.regexTitle" title="Treat pattern as regex">
                                     <input type="checkbox" id="sn-rule-regex" /> <span>.*</span>
                                 </label>
-                                <div class="menu_button" id="sn-rule-add-btn"><i class="fa-solid fa-plus"></i> Add</div>
+                                <div class="menu_button" id="sn-rule-add-btn"><i class="fa-solid fa-plus"></i> <span data-i18n="rules.add">Add</span></div>
                             </div>
                         </div>
                         <div class="sn-rules-list"></div>
@@ -624,6 +723,7 @@ jQuery(async function () {
         </div>
     `);
     $('body').append($modal);
+    i18nApplyDom($modal);
 
     const $drawer = $modal.find('#smart-notify-drawer');
 
@@ -674,12 +774,12 @@ jQuery(async function () {
         btn.tabIndex = 0;
         btn.setAttribute('role', 'button');
         btn.style.cursor = 'pointer';
-        btn.title = 'Smart Notify';
+        btn.title = t('app');
 
         const icon = document.createElement('div');
         icon.classList.add('fa-solid', 'fa-bell', 'extensionsMenuExtensionButton');
         const text = document.createElement('span');
-        text.textContent = 'Smart Notify';
+        text.textContent = t('app');
         const badge = document.createElement('span');
         badge.id = 'smart_notify_wand_badge';
         badge.className = 'sn-wand-badge';
@@ -725,7 +825,7 @@ jQuery(async function () {
         $t.html(settings.enabled
             ? '<i class="fa-solid fa-shield-halved" style="color:var(--SmartGreen,#5cb85c)"></i>'
             : '<i class="fa-solid fa-shield" style="opacity:.4"></i>');
-        $t.attr('title', settings.enabled ? 'Filtering ON (click to disable)' : 'Filtering OFF (click to enable)');
+        $t.attr('title', settings.enabled ? t('panel.masterOn') : t('panel.masterOff'));
     }
     $('#sn-master-toggle').on('click', function () {
         settings.enabled = !settings.enabled;
@@ -762,7 +862,7 @@ jQuery(async function () {
             ['console', 'fa-terminal'],
         ];
         defs.forEach(([key, icon]) => {
-            const $btn = $(`<div class="sn-filter-chip sn-chip-${key} ${logTypeFilter[key] ? 'on' : ''}" data-key="${key}" title="${key}"><i class="fa-solid ${icon}"></i></div>`);
+            const $btn = $(`<div class="sn-filter-chip sn-chip-${key} ${logTypeFilter[key] ? 'on' : ''}" data-key="${key}" title="${escapeHtml(t('filter.' + key))}"><i class="fa-solid ${icon}"></i></div>`);
             $btn.on('click', () => {
                 logTypeFilter[key] = !logTypeFilter[key];
                 $btn.toggleClass('on', logTypeFilter[key]);
@@ -786,7 +886,7 @@ jQuery(async function () {
             return logTypeFilter[e.type];
         });
         if (items.length === 0) {
-            $list.html('<div class="sn-empty"><i class="fa-regular fa-bell-slash"></i><br>No notifications</div>');
+            $list.html(`<div class="sn-empty"><i class="fa-regular fa-bell-slash"></i><br>${escapeHtml(t('log.empty'))}</div>`);
             return;
         }
         items.forEach((e) => {
@@ -794,16 +894,16 @@ jQuery(async function () {
             const icon = isConsole ? 'fa-terminal' : (ICONS[e.type] || 'fa-circle-info');
             const title = e.title ? `<div class="sn-log-title">${escapeHtml(e.title)}</div>` : '';
             const body = e.message ? `<div class="sn-log-msg ${isConsole ? 'sn-log-console-body' : ''}">${escapeHtml(e.message)}</div>` : '';
-            const blockedBadge = e.blocked ? '<span class="sn-blocked-badge"><i class="fa-solid fa-ban"></i> blocked</span>' : '';
-            const rewrittenBadge = e.rewritten ? '<span class="sn-rewritten-badge"><i class="fa-solid fa-pen"></i> edited</span>' : '';
+            const blockedBadge = e.blocked ? `<span class="sn-blocked-badge"><i class="fa-solid fa-ban"></i> ${escapeHtml(t('log.blocked'))}</span>` : '';
+            const rewrittenBadge = e.rewritten ? `<span class="sn-rewritten-badge"><i class="fa-solid fa-pen"></i> ${escapeHtml(t('log.edited'))}</span>` : '';
             const consoleBadge = isConsole
                 ? `<span class="sn-console-badge"><i class="fa-solid fa-terminal"></i> console.${e.consoleLevel || 'log'}</span>`
                 : '';
             // Console lines: offer a copy button instead of mute (you usually
             // want to grab the full error text, not silence it).
             const actions = isConsole
-                ? '<div class="sn-icon-btn sn-quick-copy" title="Copy full text"><i class="fa-solid fa-copy"></i></div>'
-                : '<div class="sn-icon-btn sn-quick-mute" title="Mute notifications like this"><i class="fa-solid fa-volume-xmark"></i></div>';
+                ? `<div class="sn-icon-btn sn-quick-copy" title="${escapeHtml(t('log.copyFull'))}"><i class="fa-solid fa-copy"></i></div>`
+                : `<div class="sn-icon-btn sn-quick-mute" title="${escapeHtml(t('log.muteLike'))}"><i class="fa-solid fa-volume-xmark"></i></div>`;
             const $row = $(`
                 <div class="sn-log-item sn-type-${e.type} ${e.blocked ? 'sn-is-blocked' : ''} ${isConsole ? 'sn-is-console' : ''}">
                     <div class="sn-log-icon"><i class="fa-solid ${icon}"></i></div>
@@ -832,13 +932,13 @@ jQuery(async function () {
     function quickMuteFromEntry(e) {
         const pattern = (e.text || '').trim();
         if (!pattern) {
-            toastrSafe('warning', 'Cannot mute: empty notification text.', 'Smart Notify');
+            toastrSafe('warning', t('toast.cannotMuteEmpty'), t('app'));
             return;
         }
         // avoid duplicates
         const exists = settings.rules.find((r) => !r.isRegex && r.action === 'mute' && r.pattern === pattern && r.type === e.type);
         if (exists) {
-            toastrSafe('info', 'A matching mute rule already exists.', 'Smart Notify');
+            toastrSafe('info', t('toast.muteExists'), t('app'));
             return;
         }
         settings.rules.push({
@@ -851,12 +951,12 @@ jQuery(async function () {
             hits: 0,
         });
         save();
-        toastrSafe('success', 'Muted. Future matches will be hidden.', 'Smart Notify');
+        toastrSafe('success', t('toast.muted'), t('app'));
         renderRules();
     }
 
     function copyText(text) {
-        const done = () => toastrSafe('success', 'Copied to clipboard.', 'Smart Notify');
+        const done = () => toastrSafe('success', t('toast.copied'), t('app'));
         try {
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(text).then(done).catch(fallback);
@@ -876,7 +976,7 @@ jQuery(async function () {
                 ta.remove();
                 done();
             } catch (e) {
-                toastrSafe('error', 'Copy failed.', 'Smart Notify');
+                toastrSafe('error', t('toast.copyFailed'), t('app'));
             }
         }
     }
@@ -904,7 +1004,7 @@ jQuery(async function () {
             return `[${ts}] ${e.type.toUpperCase()} ${status}${t}${m}`;
         });
         console.log(`${LOG_PREFIX} ===== LOG DUMP (${lines.length}) =====\n` + lines.join('\n') + `\n${LOG_PREFIX} ===== END DUMP =====`);
-        toastrSafe('info', `Dumped ${lines.length} entries to console.`, 'Smart Notify');
+        toastrSafe('info', t('toast.dumped', { count: lines.length }), t('app'));
     });
 
     // ----- rules -----
@@ -912,11 +1012,11 @@ jQuery(async function () {
         const $list = $drawer.find('.sn-rules-list');
         $list.empty();
         if (settings.rules.length === 0) {
-            $list.html('<div class="sn-empty"><i class="fa-solid fa-filter"></i><br>No rules yet.<br><small>Add a rule above or use the mute button in the log.</small></div>');
+            $list.html(`<div class="sn-empty"><i class="fa-solid fa-filter"></i><br>${escapeHtml(t('rules.empty'))}<br><small>${escapeHtml(t('rules.emptyHint'))}</small></div>`);
             return;
         }
         settings.rules.forEach((r) => {
-            const typeLabel = r.type === 'any' ? 'any' : r.type;
+            const typeLabel = r.type === 'any' ? t('rules.typeAny') : r.type;
             const actionCls = r.action === 'allow' ? 'sn-rule-allow'
                             : r.action === 'rewrite' ? 'sn-rule-rewrite'
                             : 'sn-rule-mute';
@@ -924,11 +1024,14 @@ jQuery(async function () {
                              : r.action === 'rewrite' ? 'fa-pen'
                              : 'fa-volume-xmark';
             const rewriteInfo = r.action === 'rewrite'
-                ? `<div class="sn-rule-rewrite-to"><i class="fa-solid fa-arrow-right"></i> <code>${escapeHtml(r.replacement || '(removed)')}</code></div>`
+                ? `<div class="sn-rule-rewrite-to"><i class="fa-solid fa-arrow-right"></i> <code>${escapeHtml(r.replacement || t('rules.removed'))}</code></div>`
                 : '';
+            const actionLabel = r.action === 'allow' ? t('rules.actionAllow')
+                              : r.action === 'rewrite' ? t('rules.actionRewrite')
+                              : t('rules.actionMute');
             const $row = $(`
                 <div class="sn-rule-item ${r.enabled ? '' : 'sn-rule-off'} ${actionCls}">
-                    <label class="sn-switch" title="Enable/disable rule">
+                    <label class="sn-switch" title="${escapeHtml(t('rules.enableTitle'))}">
                         <input type="checkbox" ${r.enabled ? 'checked' : ''} class="sn-rule-enabled" />
                         <span class="sn-slider"></span>
                     </label>
@@ -936,12 +1039,12 @@ jQuery(async function () {
                         <div class="sn-rule-pattern">
                             <i class="fa-solid ${actionIcon}"></i>
                             ${r.isRegex ? '<span class="sn-rule-regex-tag">.*</span> ' : ''}
-                            <code>${escapeHtml(r.pattern || '(type only)')}</code>
+                            <code>${escapeHtml(r.pattern || t('rules.typeOnly'))}</code>
                         </div>
                         ${rewriteInfo}
-                        <div class="sn-rule-sub">${typeLabel} &middot; ${r.action} &middot; ${r.hits || 0} hits</div>
+                        <div class="sn-rule-sub">${escapeHtml(typeLabel)} &middot; ${escapeHtml(actionLabel)} &middot; ${r.hits || 0} ${escapeHtml(t('rules.hits'))}</div>
                     </div>
-                    <div class="sn-icon-btn sn-rule-del" title="Delete rule"><i class="fa-solid fa-trash"></i></div>
+                    <div class="sn-icon-btn sn-rule-del" title="${escapeHtml(t('rules.deleteTitle'))}"><i class="fa-solid fa-trash"></i></div>
                 </div>
             `);
             $row.find('.sn-rule-enabled').on('change', function () {
@@ -971,15 +1074,15 @@ jQuery(async function () {
         const isRegex = $('#sn-rule-regex').is(':checked');
         const replacement = $('#sn-rule-replacement').val();
         if (!pattern && type === 'any') {
-            toastrSafe('warning', 'Enter a pattern or pick a specific type.', 'Smart Notify');
+            toastrSafe('warning', t('toast.needPattern'), t('app'));
             return;
         }
         if (action === 'rewrite' && !pattern) {
-            toastrSafe('warning', 'Rewrite rules need a pattern to match.', 'Smart Notify');
+            toastrSafe('warning', t('toast.rewriteNeedsPattern'), t('app'));
             return;
         }
         if (isRegex && pattern && !compileRegex(pattern)) {
-            toastrSafe('error', 'Invalid regular expression.', 'Smart Notify');
+            toastrSafe('error', t('toast.invalidRegex'), t('app'));
             return;
         }
         settings.rules.push({ id: uid(), pattern, isRegex, type, action, replacement, enabled: true, hits: 0 });
@@ -1000,20 +1103,20 @@ jQuery(async function () {
         $f.html(`
             <label class="sn-checkbox sn-big-toggle">
                 <input type="checkbox" id="sn-ap-override" ${a.override ? 'checked' : ''} />
-                <span>Override toast appearance</span>
+                <span>${escapeHtml(t('look.override'))}</span>
             </label>
             <div class="sn-ap-fields ${a.override ? '' : 'sn-disabled'}">
-                <label>Position</label>
+                <label>${escapeHtml(t('look.position'))}</label>
                 <select class="text_pole" id="sn-ap-position">
-                    <option value="toast-top-right">Top right</option>
-                    <option value="toast-top-left">Top left</option>
-                    <option value="toast-top-center">Top center</option>
-                    <option value="toast-top-full-width">Top full width</option>
-                    <option value="toast-bottom-right">Bottom right</option>
-                    <option value="toast-bottom-left">Bottom left</option>
-                    <option value="toast-bottom-center">Bottom center</option>
-                    <option value="toast-bottom-full-width">Bottom full width</option>
-                    <option value="custom">Custom (X / Y)</option>
+                    <option value="toast-top-right">${escapeHtml(t('look.posTopRight'))}</option>
+                    <option value="toast-top-left">${escapeHtml(t('look.posTopLeft'))}</option>
+                    <option value="toast-top-center">${escapeHtml(t('look.posTopCenter'))}</option>
+                    <option value="toast-top-full-width">${escapeHtml(t('look.posTopFull'))}</option>
+                    <option value="toast-bottom-right">${escapeHtml(t('look.posBottomRight'))}</option>
+                    <option value="toast-bottom-left">${escapeHtml(t('look.posBottomLeft'))}</option>
+                    <option value="toast-bottom-center">${escapeHtml(t('look.posBottomCenter'))}</option>
+                    <option value="toast-bottom-full-width">${escapeHtml(t('look.posBottomFull'))}</option>
+                    <option value="custom">${escapeHtml(t('look.posCustom'))}</option>
                 </select>
                 <div class="sn-custom-pos ${a.position === 'custom' ? '' : 'sn-hidden'}">
                     <div class="sn-row2">
@@ -1021,37 +1124,37 @@ jQuery(async function () {
                         <div><label>Y (px)</label><input type="number" class="text_pole" id="sn-ap-y" value="${a.customPosition ? a.customPosition.y : 20}" /></div>
                     </div>
                 </div>
-                <label>Width: <b id="sn-ap-width-val">${a.width}px</b></label>
+                <label>${escapeHtml(t('look.width'))}: <b id="sn-ap-width-val">${a.width}px</b></label>
                 <input type="range" id="sn-ap-width" min="180" max="700" step="10" value="${a.width}" />
-                <label>Font size: <b id="sn-ap-font-val">${a.fontSize}px</b></label>
+                <label>${escapeHtml(t('look.fontSize'))}: <b id="sn-ap-font-val">${a.fontSize}px</b></label>
                 <input type="range" id="sn-ap-font" min="10" max="24" step="1" value="${a.fontSize}" />
-                <label>Duration: <b id="sn-ap-dur-val">${(a.duration/1000).toFixed(1)}s</b> <small>(0 = sticky)</small></label>
+                <label>${escapeHtml(t('look.duration'))}: <b id="sn-ap-dur-val">${(a.duration/1000).toFixed(1)}s</b> <small>${escapeHtml(t('look.durationHint'))}</small></label>
                 <input type="range" id="sn-ap-dur" min="0" max="20000" step="500" value="${a.duration}" />
-                <label>Opacity: <b id="sn-ap-op-val">${Math.round(a.opacity*100)}%</b></label>
+                <label>${escapeHtml(t('look.opacity'))}: <b id="sn-ap-op-val">${Math.round(a.opacity*100)}%</b></label>
                 <input type="range" id="sn-ap-op" min="0.2" max="1" step="0.05" value="${a.opacity}" />
 
                 <hr>
                 <label class="sn-checkbox">
                     <input type="checkbox" id="sn-ap-color" ${a.colorOverride ? 'checked' : ''} />
-                    <span>Override colors / theme</span>
+                    <span>${escapeHtml(t('look.colorOverride'))}</span>
                 </label>
                 <div class="sn-ap-color-fields ${a.colorOverride ? '' : 'sn-disabled'}">
                     <div class="sn-row2">
-                        <div><label>Background</label><input type="color" id="sn-ap-bg" value="${a.bgColor}" /></div>
-                        <div><label>Text</label><input type="color" id="sn-ap-text" value="${a.textColor}" /></div>
+                        <div><label>${escapeHtml(t('look.background'))}</label><input type="color" id="sn-ap-bg" value="${a.bgColor}" /></div>
+                        <div><label>${escapeHtml(t('look.text'))}</label><input type="color" id="sn-ap-text" value="${a.textColor}" /></div>
                     </div>
                     <div class="sn-row2">
-                        <div><label>Border</label><input type="color" id="sn-ap-border" value="${a.borderColor}" /></div>
-                        <div><label>Border width: <b id="sn-ap-bw-val">${a.borderWidth}px</b></label>
+                        <div><label>${escapeHtml(t('look.border'))}</label><input type="color" id="sn-ap-border" value="${a.borderColor}" /></div>
+                        <div><label>${escapeHtml(t('look.borderWidth'))}: <b id="sn-ap-bw-val">${a.borderWidth}px</b></label>
                             <input type="range" id="sn-ap-bw" min="0" max="6" step="1" value="${a.borderWidth}" /></div>
                     </div>
-                    <label>Corner radius: <b id="sn-ap-br-val">${a.borderRadius}px</b></label>
+                    <label>${escapeHtml(t('look.cornerRadius'))}: <b id="sn-ap-br-val">${a.borderRadius}px</b></label>
                     <input type="range" id="sn-ap-br" min="0" max="24" step="1" value="${a.borderRadius}" />
                 </div>
 
                 <div class="sn-ap-buttons">
-                    <div class="menu_button" id="sn-ap-test"><i class="fa-solid fa-vial"></i> Test toast</div>
-                    <div class="menu_button" id="sn-ap-reset"><i class="fa-solid fa-rotate-left"></i> Reset</div>
+                    <div class="menu_button" id="sn-ap-test"><i class="fa-solid fa-vial"></i> ${escapeHtml(t('look.test'))}</div>
+                    <div class="menu_button" id="sn-ap-reset"><i class="fa-solid fa-rotate-left"></i> ${escapeHtml(t('look.reset'))}</div>
                 </div>
             </div>
         `);
@@ -1108,7 +1211,7 @@ jQuery(async function () {
         $('#sn-ap-test').on('click', function () {
             // bypass blocking; show with current appearance
             const merged = Object.assign({}, appearanceOptions());
-            if (original.info) original.info.call(toastr, 'This is a Smart Notify test toast.', 'Preview', merged);
+            if (original.info) original.info.call(toastr, t('look.testToast'), t('look.testTitle'), merged);
         });
         $('#sn-ap-reset').on('click', function () {
             settings.appearance = mergeSettings(defaultSettings.appearance, {});
@@ -1123,14 +1226,14 @@ jQuery(async function () {
         const rl = settings.rateLimit;
         const $m = $drawer.find('.sn-more-form');
         $m.html(`
-            <div class="sn-section-title"><i class="fa-solid fa-terminal"></i> Capture console <small>(into the Log)</small></div>
+            <div class="sn-section-title"><i class="fa-solid fa-terminal"></i> ${escapeHtml(t('more.captureTitle'))} <small>${escapeHtml(t('more.captureSub'))}</small></div>
             <label class="sn-checkbox sn-big-toggle">
                 <input type="checkbox" id="sn-cc-enabled" ${cc.enabled ? 'checked' : ''} />
-                <span>Show browser-console output in the Log</span>
+                <span>${escapeHtml(t('more.captureToggle'))}</span>
             </label>
-            <small class="sn-hint">Toasts are often terse ("API error"); the full details are usually printed to the console. This pulls those detailed lines into the Log tab (look for the <i class="fa-solid fa-terminal"></i> chip). Note: this captures the <b>browser</b> console only — the Termux/node <b>server</b> log lives in another process and can't be read from here.</small>
+            <small class="sn-hint">${escapeHtml(t('more.captureHint'))}</small>
             <div class="sn-cc-fields ${cc.enabled ? '' : 'sn-disabled'}">
-                <label>Capture which console levels</label>
+                <label>${escapeHtml(t('more.captureLevels'))}</label>
                 <div class="sn-cc-levels">
                     <label class="sn-checkbox"><input type="checkbox" class="sn-cc-lvl" data-lvl="error" ${cc.levels.error ? 'checked' : ''} /> <span>error</span></label>
                     <label class="sn-checkbox"><input type="checkbox" class="sn-cc-lvl" data-lvl="warn" ${cc.levels.warn ? 'checked' : ''} /> <span>warn</span></label>
@@ -1141,47 +1244,47 @@ jQuery(async function () {
             </div>
 
             <hr>
-            <div class="sn-section-title"><i class="fa-solid fa-share-from-square"></i> Mirror to console <small>(devtools / Termux)</small></div>
+            <div class="sn-section-title"><i class="fa-solid fa-share-from-square"></i> ${escapeHtml(t('more.mirrorTitle'))} <small>${escapeHtml(t('more.mirrorSub'))}</small></div>
             <label class="sn-checkbox sn-big-toggle">
                 <input type="checkbox" id="sn-con-mirror" ${c.mirror ? 'checked' : ''} />
-                <span>Mirror notifications to console (full text)</span>
+                <span>${escapeHtml(t('more.mirrorToggle'))}</span>
             </label>
             <div class="sn-con-fields ${c.mirror ? '' : 'sn-disabled'}">
-                <label>Which to log</label>
+                <label>${escapeHtml(t('more.mirrorWhich'))}</label>
                 <select class="text_pole" id="sn-con-level">
-                    <option value="all">All (shown + blocked)</option>
-                    <option value="shown">Only shown</option>
-                    <option value="blocked">Only blocked</option>
+                    <option value="all">${escapeHtml(t('more.mirrorAll'))}</option>
+                    <option value="shown">${escapeHtml(t('more.mirrorShown'))}</option>
+                    <option value="blocked">${escapeHtml(t('more.mirrorBlocked'))}</option>
                 </select>
-                <small class="sn-hint">On PC this is the browser console; on phone it's the Termux/server log.</small>
+                <small class="sn-hint">${escapeHtml(t('more.mirrorHint'))}</small>
             </div>
 
             <hr>
-            <div class="sn-section-title"><i class="fa-solid fa-gauge-high"></i> Anti-spam</div>
+            <div class="sn-section-title"><i class="fa-solid fa-gauge-high"></i> ${escapeHtml(t('more.spamTitle'))}</div>
             <label class="sn-checkbox">
                 <input type="checkbox" id="sn-rl-dedupe" ${rl.dedupeBurst ? 'checked' : ''} />
-                <span>Drop identical toasts fired in a burst</span>
+                <span>${escapeHtml(t('more.spamDedupe'))}</span>
             </label>
             <div class="sn-rl-fields ${rl.dedupeBurst ? '' : 'sn-disabled'}">
-                <label>Dedupe window: <b id="sn-rl-dw-val">${(rl.dedupeWindow/1000).toFixed(1)}s</b></label>
+                <label>${escapeHtml(t('more.spamDedupeWindow'))}: <b id="sn-rl-dw-val">${(rl.dedupeWindow/1000).toFixed(1)}s</b></label>
                 <input type="range" id="sn-rl-dw" min="500" max="15000" step="500" value="${rl.dedupeWindow}" />
             </div>
             <label class="sn-checkbox">
                 <input type="checkbox" id="sn-rl-throttle" ${rl.throttle ? 'checked' : ''} />
-                <span>Throttle total toast rate</span>
+                <span>${escapeHtml(t('more.spamThrottle'))}</span>
             </label>
             <div class="sn-rlt-fields ${rl.throttle ? '' : 'sn-disabled'}">
-                <label>Max: <b id="sn-rl-max-val">${rl.throttleMax}</b> toast(s) per <b id="sn-rl-tw-val">${(rl.throttleWindow/1000).toFixed(1)}s</b></label>
+                <label>${escapeHtml(t('more.spamMax'))}: <b id="sn-rl-max-val">${rl.throttleMax}</b> ${escapeHtml(t('more.spamMaxToasts'))} <b id="sn-rl-tw-val">${(rl.throttleWindow/1000).toFixed(1)}s</b></label>
                 <input type="range" id="sn-rl-max" min="1" max="20" step="1" value="${rl.throttleMax}" />
                 <input type="range" id="sn-rl-tw" min="1000" max="30000" step="500" value="${rl.throttleWindow}" />
             </div>
 
             <hr>
-            <div class="sn-section-title"><i class="fa-solid fa-file-arrow-down"></i> Backup</div>
-            <small class="sn-hint">Export/import rules + all settings as JSON.</small>
+            <div class="sn-section-title"><i class="fa-solid fa-file-arrow-down"></i> ${escapeHtml(t('more.backupTitle'))}</div>
+            <small class="sn-hint">${escapeHtml(t('more.backupHint'))}</small>
             <div class="sn-ap-buttons">
-                <div class="menu_button" id="sn-export"><i class="fa-solid fa-download"></i> Export</div>
-                <div class="menu_button" id="sn-import"><i class="fa-solid fa-upload"></i> Import</div>
+                <div class="menu_button" id="sn-export"><i class="fa-solid fa-download"></i> ${escapeHtml(t('more.export'))}</div>
+                <div class="menu_button" id="sn-import"><i class="fa-solid fa-upload"></i> ${escapeHtml(t('more.import'))}</div>
             </div>
             <input type="file" id="sn-import-file" accept="application/json,.json" class="sn-hidden" />
         `);
@@ -1245,7 +1348,7 @@ jQuery(async function () {
         a.click();
         a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
-        toastrSafe('success', 'Config exported.', 'Smart Notify');
+        toastrSafe('success', t('toast.exported'), t('app'));
     }
 
     function importConfig(file) {
@@ -1266,10 +1369,10 @@ jQuery(async function () {
                 renderAppearance();
                 renderMore();
                 syncSettingsPanel();
-                toastrSafe('success', 'Config imported.', 'Smart Notify');
+                toastrSafe('success', t('toast.imported'), t('app'));
             } catch (e) {
                 console.error(`${LOG_PREFIX} import failed:`, e);
-                toastrSafe('error', 'Import failed: invalid file.', 'Smart Notify');
+                toastrSafe('error', t('toast.importFailed'), t('app'));
             }
         };
         reader.readAsText(file);
@@ -1328,16 +1431,17 @@ jQuery(async function () {
     }
 
     // Inject settings.html into the Extensions settings panel, then wire it up.
-    const extPath = 'scripts/extensions/third-party/' + MODULE_NAME;
     let wireTimer = null;
     (async function injectSettings() {
         let html = '';
-        try { html = await $.get(extPath + '/settings.html'); } catch (e) { html = ''; }
+        try { html = await $.get('/' + EXT_PATH + '/settings.html'); } catch (e) { html = ''; }
         if (html) {
+            const $html = $(html);
+            i18nApplyDom($html);
             const rp = $('#extensions_settings2');
             const lp = $('#extensions_settings');
-            if (rp.length) rp.append(html);
-            else if (lp.length) lp.append(html);
+            if (rp.length) rp.append($html);
+            else if (lp.length) lp.append($html);
         }
         // The panel may still be settling; retry wiring briefly.
         let tries = 0;
