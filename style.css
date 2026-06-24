@@ -59,6 +59,8 @@ body.sn-modal-open { overflow: hidden; }
     display: flex;
     flex-direction: column;
     font-size: 14px;
+    box-sizing: border-box;
+    overflow-x: hidden;
     animation: sn-slide-in 0.26s cubic-bezier(0.16, 1, 0.3, 1);
 }
 @keyframes sn-slide-in {
@@ -106,14 +108,16 @@ body.sn-modal-open { overflow: hidden; }
 }
 .sn-tab {
     flex: 1;
+    min-width: 0;
     text-align: center;
-    padding: 10px 6px;
+    padding: 10px 4px;
     cursor: pointer;
     font-size: 13px;
     color: var(--sn-muted);
     border-bottom: 2px solid transparent;
     transition: color 0.15s ease, border-color 0.15s ease;
     user-select: none;
+    white-space: nowrap;
 }
 .sn-tab i { margin-right: 4px; }
 .sn-tab:hover { color: var(--sn-fg); }
@@ -133,11 +137,26 @@ body.sn-modal-open { overflow: hidden; }
 .sn-panel {
     flex: 1 1 auto;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 12px;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    max-width: 100%;
+    box-sizing: border-box;
 }
+/* Never let any control or text inside a panel force horizontal scroll. */
+.sn-panel * { box-sizing: border-box; }
+.sn-panel input,
+.sn-panel select,
+.sn-panel textarea,
+.sn-panel .text_pole {
+    max-width: 100%;
+}
+.sn-panel input[type="range"] { min-width: 0; }
+.sn-panel label,
+.sn-panel .sn-hint,
+.sn-panel .sn-section-title { overflow-wrap: anywhere; word-break: break-word; }
 
 /* ---------- Toolbar (log) ---------- */
 .sn-toolbar {
@@ -390,7 +409,7 @@ body.sn-modal-open { overflow: hidden; }
 .sn-rl-fields,
 .sn-rlt-fields { display: flex; flex-direction: column; gap: 8px; }
 .sn-row2 { display: flex; gap: 8px; }
-.sn-row2 > div { flex: 1; }
+.sn-row2 > div { flex: 1; min-width: 0; }
 .sn-ap-buttons { display: flex; gap: 8px; margin-top: 10px; }
 .sn-ap-buttons .menu_button { flex: 1; justify-content: center; }
 .sn-ap-color-fields input[type="color"] {
@@ -442,8 +461,8 @@ body.sn-modal-open { overflow: hidden; }
         top: auto;
         right: auto;
         left: auto;
-        width: 100vw;
-        max-width: 100vw;
+        width: 100%;
+        max-width: 100%;
         height: calc(100vh - var(--topBarBlockSize, 0px));
         height: calc(100dvh - var(--topBarBlockSize, 0px));
         margin: var(--topBarBlockSize, 0px) 0 0;
@@ -452,11 +471,13 @@ body.sn-modal-open { overflow: hidden; }
         box-shadow: none;
         padding-bottom: env(safe-area-inset-bottom, 0px);
         animation: none;
+        overflow-x: hidden;
+        box-sizing: border-box;
     }
 
     /* bigger touch targets */
     .sn-icon-btn { width: 38px; height: 38px; }
-    .sn-tab { padding: 14px 6px; font-size: 14px; }
+    .sn-tab { padding: 14px 4px; font-size: 12.5px; }
     .sn-filter-chip { width: 36px; height: 36px; }
     .sn-switch { width: 44px; height: 24px; }
     .sn-slider::before { height: 18px; width: 18px; }
