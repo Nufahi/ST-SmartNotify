@@ -62,6 +62,20 @@ jQuery(async function () {
             level: 'all',               // 'shown' | 'blocked' | 'all'
             includeBlocked: true,       // (kept for forward-compat)
         },
+        // console CAPTURE: pull the detailed browser-console output (the full
+        // error behind a terse toast) INTO the Smart Notify log.
+        consoleCapture: {
+            enabled: false,             // intercept window.console.*
+            levels: {                   // which console methods to capture
+                error: true,
+                warn: true,
+                info: false,
+                log: false,
+                debug: false,
+            },
+            ignoreOwn: true,            // skip our own [Smart Notify] lines (avoid loops)
+            maxLen: 4000,               // truncate very long console payloads
+        },
         // log
         logLimit: 200,
         // UI
@@ -290,6 +304,107 @@ jQuery(async function () {
                  : entry.type === 'warning' ? console.warn
                  : console.log;
         try { fn.call(console, full); } catch (e) { console.log(full); }
+    }
+
+    // ---------------------------------------------------------------------
+    // Console CAPTURE: bring the detailed browser-console output into the log.
+    // ST often shows a terse toast ("API error") while the *full* details are
+    // printed via console.error/warn. We intercept window.console.* so those
+    // detailed lines appear in Smart Notify's Log panel.
+    // ---------------------------------------------------------------------
+    const CONSOLE_LEVELS = ['error', 'warn', 'info', 'log', 'debug'];
+    // map a console level to a toast-ish "type" for icon/colour reuse
+    const CONSOLE_TYPE = { error: 'error', warn: 'warning', info: 'info', log: 'info', debug: 'info' };
+    const origConsole = {};
+    let consolePatched = false;
+
+    function formatConsoleArgs(args) {
+        const parts = [];
+        for (const a of args) {
+            if (a == null) { parts.push(String(a)); continue; }
+            if (typeof a === 'string') { parts.push(a); continue; }
+            if (a instanceof Error) {
+                parts.push(a.stack ? String(a.stack) : (a.name + ': ' + a.message));
+                continue;
+            }
+            try {
+                parts.push(JSON.stringify(a, jsonReplacer(), 2));
+            } catch (e) {
+                try { parts.push(String(a)); } catch (e2) { parts.push('[unserializable]'); }
+            }
+        }
+        return parts.join(' ');
+    }
+
+    // Guard against circular refs when stringifying console objects.
+    function jsonReplacer() {
+        const seen = new WeakSet();
+        return function (key, value) {
+            if (typeof value === 'object' && value !== null) {
+                if (seen.has(value)) return '[Circular]';
+                seen.add(value);
+            }
+            if (typeof value === 'function') return '[Function]';
+            return value;
+        };
+    }
+
+    function captureConsole(level, args) {
+        const cc = settings.consoleCapture;
+        if (!cc.enabled) return;
+        if (!cc.levels[level]) return;
+
+        let text = formatConsoleArgs(args);
+        if (cc.ignoreOwn && text.indexOf(LOG_PREFIX) !== -1) return; // avoid feedback loops
+        if (text.length > cc.maxLen) text = text.slice(0, cc.maxLen) + '\u2026 [truncated]';
+        if (text.trim() === '') return;
+
+        // First line acts as title, the rest as the detailed body.
+        const nl = text.indexOf('\n');
+        const title = nl === -1 ? text : text.slice(0, nl);
+        const message = nl === -1 ? '' : text.slice(nl + 1);
+
+        pushLog({
+            id: uid(),
+            source: 'console',
+            consoleLevel: level,
+            type: CONSOLE_TYPE[level] || 'info',
+            title,
+            message,
+            text,
+            time: Date.now(),
+            blocked: false,
+            ruleId: null,
+            rewritten: false,
+        });
+    }
+
+    function patchConsole() {
+        if (consolePatched || typeof window.console === 'undefined') return;
+        CONSOLE_LEVELS.forEach((level) => {
+            const orig = window.console[level];
+            if (typeof orig !== 'function') return;
+            origConsole[level] = orig;
+            window.console[level] = function (...args) {
+                try { captureConsole(level, args); } catch (e) { /* never break logging */ }
+                return orig.apply(this, args);
+            };
+        });
+        consolePatched = true;
+    }
+
+    function unpatchConsole() {
+        if (!consolePatched) return;
+        CONSOLE_LEVELS.forEach((level) => {
+            if (origConsole[level]) window.console[level] = origConsole[level];
+        });
+        consolePatched = false;
+    }
+
+    // Turn capture on/off based on settings (called at init and from the UI).
+    function syncConsoleCapture() {
+        if (settings.consoleCapture.enabled) patchConsole();
+        else unpatchConsole();
     }
 
     // ---------------------------------------------------------------------
@@ -634,7 +749,7 @@ jQuery(async function () {
     });
 
     // ----- log type filters -----
-    const logTypeFilter = { success: true, info: true, warning: true, error: true, blocked: true };
+    const logTypeFilter = { success: true, info: true, warning: true, error: true, blocked: true, console: true };
     function renderTypeFilters() {
         const $c = $drawer.find('.sn-type-filters');
         $c.empty();
@@ -644,6 +759,7 @@ jQuery(async function () {
             ['warning', 'fa-triangle-exclamation'],
             ['error', 'fa-circle-xmark'],
             ['blocked', 'fa-ban'],
+            ['console', 'fa-terminal'],
         ];
         defs.forEach(([key, icon]) => {
             const $btn = $(`<div class="sn-filter-chip sn-chip-${key} ${logTypeFilter[key] ? 'on' : ''}" data-key="${key}" title="${key}"><i class="fa-solid ${icon}"></i></div>`);
@@ -665,6 +781,7 @@ jQuery(async function () {
         const $list = $drawer.find('.sn-log-list');
         $list.empty();
         const items = notifLog.filter((e) => {
+            if (e.source === 'console') return logTypeFilter.console;
             if (e.blocked) return logTypeFilter.blocked;
             return logTypeFilter[e.type];
         });
@@ -673,26 +790,39 @@ jQuery(async function () {
             return;
         }
         items.forEach((e) => {
-            const icon = ICONS[e.type] || 'fa-circle-info';
+            const isConsole = e.source === 'console';
+            const icon = isConsole ? 'fa-terminal' : (ICONS[e.type] || 'fa-circle-info');
             const title = e.title ? `<div class="sn-log-title">${escapeHtml(e.title)}</div>` : '';
-            const body = e.message ? `<div class="sn-log-msg">${escapeHtml(e.message)}</div>` : '';
+            const body = e.message ? `<div class="sn-log-msg ${isConsole ? 'sn-log-console-body' : ''}">${escapeHtml(e.message)}</div>` : '';
             const blockedBadge = e.blocked ? '<span class="sn-blocked-badge"><i class="fa-solid fa-ban"></i> blocked</span>' : '';
             const rewrittenBadge = e.rewritten ? '<span class="sn-rewritten-badge"><i class="fa-solid fa-pen"></i> edited</span>' : '';
+            const consoleBadge = isConsole
+                ? `<span class="sn-console-badge"><i class="fa-solid fa-terminal"></i> console.${e.consoleLevel || 'log'}</span>`
+                : '';
+            // Console lines: offer a copy button instead of mute (you usually
+            // want to grab the full error text, not silence it).
+            const actions = isConsole
+                ? '<div class="sn-icon-btn sn-quick-copy" title="Copy full text"><i class="fa-solid fa-copy"></i></div>'
+                : '<div class="sn-icon-btn sn-quick-mute" title="Mute notifications like this"><i class="fa-solid fa-volume-xmark"></i></div>';
             const $row = $(`
-                <div class="sn-log-item sn-type-${e.type} ${e.blocked ? 'sn-is-blocked' : ''}">
+                <div class="sn-log-item sn-type-${e.type} ${e.blocked ? 'sn-is-blocked' : ''} ${isConsole ? 'sn-is-console' : ''}">
                     <div class="sn-log-icon"><i class="fa-solid ${icon}"></i></div>
                     <div class="sn-log-content">
                         ${title}${body}
-                        <div class="sn-log-meta">${fmtTime(e.time)} ${blockedBadge} ${rewrittenBadge}</div>
+                        <div class="sn-log-meta">${fmtTime(e.time)} ${consoleBadge} ${blockedBadge} ${rewrittenBadge}</div>
                     </div>
                     <div class="sn-log-actions">
-                        <div class="sn-icon-btn sn-quick-mute" title="Mute notifications like this"><i class="fa-solid fa-volume-xmark"></i></div>
+                        ${actions}
                     </div>
                 </div>
             `);
             $row.find('.sn-quick-mute').on('click', (ev) => {
                 ev.stopPropagation();
                 quickMuteFromEntry(e);
+            });
+            $row.find('.sn-quick-copy').on('click', (ev) => {
+                ev.stopPropagation();
+                copyText(e.text || '');
             });
             $list.append($row);
         });
@@ -723,6 +853,32 @@ jQuery(async function () {
         save();
         toastrSafe('success', 'Muted. Future matches will be hidden.', 'Smart Notify');
         renderRules();
+    }
+
+    function copyText(text) {
+        const done = () => toastrSafe('success', 'Copied to clipboard.', 'Smart Notify');
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(done).catch(fallback);
+                return;
+            }
+        } catch (e) { /* fall through */ }
+        fallback();
+        function fallback() {
+            try {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                ta.remove();
+                done();
+            } catch (e) {
+                toastrSafe('error', 'Copy failed.', 'Smart Notify');
+            }
+        }
     }
 
     // Use original toastr so our own messages are never blocked
@@ -963,10 +1119,29 @@ jQuery(async function () {
     // ----- More panel (console mirror, anti-spam, import/export) -----
     function renderMore() {
         const c = settings.console;
+        const cc = settings.consoleCapture;
         const rl = settings.rateLimit;
         const $m = $drawer.find('.sn-more-form');
         $m.html(`
-            <div class="sn-section-title"><i class="fa-solid fa-terminal"></i> Console mirror <small>(devtools / Termux)</small></div>
+            <div class="sn-section-title"><i class="fa-solid fa-terminal"></i> Capture console <small>(into the Log)</small></div>
+            <label class="sn-checkbox sn-big-toggle">
+                <input type="checkbox" id="sn-cc-enabled" ${cc.enabled ? 'checked' : ''} />
+                <span>Show browser-console output in the Log</span>
+            </label>
+            <small class="sn-hint">Toasts are often terse ("API error"); the full details are usually printed to the console. This pulls those detailed lines into the Log tab (look for the <i class="fa-solid fa-terminal"></i> chip). Note: this captures the <b>browser</b> console only — the Termux/node <b>server</b> log lives in another process and can't be read from here.</small>
+            <div class="sn-cc-fields ${cc.enabled ? '' : 'sn-disabled'}">
+                <label>Capture which console levels</label>
+                <div class="sn-cc-levels">
+                    <label class="sn-checkbox"><input type="checkbox" class="sn-cc-lvl" data-lvl="error" ${cc.levels.error ? 'checked' : ''} /> <span>error</span></label>
+                    <label class="sn-checkbox"><input type="checkbox" class="sn-cc-lvl" data-lvl="warn" ${cc.levels.warn ? 'checked' : ''} /> <span>warn</span></label>
+                    <label class="sn-checkbox"><input type="checkbox" class="sn-cc-lvl" data-lvl="info" ${cc.levels.info ? 'checked' : ''} /> <span>info</span></label>
+                    <label class="sn-checkbox"><input type="checkbox" class="sn-cc-lvl" data-lvl="log" ${cc.levels.log ? 'checked' : ''} /> <span>log</span></label>
+                    <label class="sn-checkbox"><input type="checkbox" class="sn-cc-lvl" data-lvl="debug" ${cc.levels.debug ? 'checked' : ''} /> <span>debug</span></label>
+                </div>
+            </div>
+
+            <hr>
+            <div class="sn-section-title"><i class="fa-solid fa-share-from-square"></i> Mirror to console <small>(devtools / Termux)</small></div>
             <label class="sn-checkbox sn-big-toggle">
                 <input type="checkbox" id="sn-con-mirror" ${c.mirror ? 'checked' : ''} />
                 <span>Mirror notifications to console (full text)</span>
@@ -1015,6 +1190,16 @@ jQuery(async function () {
         const refreshConDisabled = () => $m.find('.sn-con-fields').toggleClass('sn-disabled', !c.mirror);
         $('#sn-con-mirror').on('change', function () { c.mirror = this.checked; save(); refreshConDisabled(); });
         $('#sn-con-level').on('change', function () { c.level = this.value; save(); });
+
+        // console capture
+        const refreshCcDisabled = () => $m.find('.sn-cc-fields').toggleClass('sn-disabled', !cc.enabled);
+        $('#sn-cc-enabled').on('change', function () {
+            cc.enabled = this.checked; save(); syncConsoleCapture(); refreshCcDisabled();
+            syncSettingsPanel();
+        });
+        $m.find('.sn-cc-lvl').on('change', function () {
+            cc.levels[this.dataset.lvl] = this.checked; save();
+        });
 
         $('#sn-rl-dedupe').on('change', function () {
             rl.dedupeBurst = this.checked; save();
@@ -1074,6 +1259,7 @@ jQuery(async function () {
                 Object.keys(merged).forEach((k) => { settings[k] = merged[k]; });
                 save();
                 applyAppearanceCss();
+                syncConsoleCapture();
                 renderMasterToggle();
                 renderLog();
                 renderRules();
@@ -1094,6 +1280,7 @@ jQuery(async function () {
         $('#smart_notify_enabled').prop('checked', settings.enabled);
         $('#smart_notify_autoopen').prop('checked', settings.autoOpenOnNew);
         $('#smart_notify_console_mirror').prop('checked', settings.console.mirror);
+        $('#smart_notify_console_capture').prop('checked', settings.consoleCapture.enabled);
         TOAST_TYPES.forEach((t) => {
             $(`#smart_notify_mute_${t}`).prop('checked', settings.muteTypes[t]);
         });
@@ -1134,6 +1321,9 @@ jQuery(async function () {
         $('#smart_notify_console_mirror').prop('checked', settings.console.mirror).off('change.sn').on('change.sn', function () {
             settings.console.mirror = this.checked; save();
         });
+        $('#smart_notify_console_capture').prop('checked', settings.consoleCapture.enabled).off('change.sn').on('change.sn', function () {
+            settings.consoleCapture.enabled = this.checked; save(); syncConsoleCapture();
+        });
         return true;
     }
 
@@ -1162,6 +1352,7 @@ jQuery(async function () {
     renderTypeFilters();
     renderMasterToggle();
     applyAppearanceCss();
+    syncConsoleCapture();
     renderLog();
 
     console.log(`${LOG_PREFIX} initialized.`);
@@ -1171,6 +1362,7 @@ jQuery(async function () {
     // ---------------------------------------------------------------------
     window.__smartNotifyDispose = function () {
         try { restoreToastr(); } catch (e) { /* noop */ }
+        try { unpatchConsole(); } catch (e) { /* noop */ }
         clearInterval(wireTimer);
         clearInterval(wandTimer);
         $('#smart-notify-modal, #smart-notify-toast-style, #smart_notify_wand_button').remove();

@@ -167,6 +167,7 @@ body.sn-modal-open { overflow: hidden; }
 .sn-chip-warning.on { color: #f0ad4e; }
 .sn-chip-error.on { color: #e74c3c; }
 .sn-chip-blocked.on { color: var(--sn-muted); }
+.sn-chip-console.on { color: #8aa0ff; }
 
 /* ---------- Log items ---------- */
 .sn-log-list { display: flex; flex-direction: column; gap: 8px; }
@@ -187,6 +188,8 @@ body.sn-modal-open { overflow: hidden; }
 .sn-log-item.sn-type-warning { border-left-color: #f0ad4e; }
 .sn-log-item.sn-type-error { border-left-color: #e74c3c; }
 .sn-log-item.sn-is-blocked { opacity: 0.55; }
+.sn-log-item.sn-is-console { border-left-color: #8aa0ff; background: rgba(138, 160, 255, 0.06); }
+.sn-is-console .sn-log-icon { color: #8aa0ff; }
 
 .sn-log-icon { font-size: 16px; padding-top: 1px; }
 .sn-type-success .sn-log-icon { color: #5cb85c; }
@@ -219,8 +222,29 @@ body.sn-modal-open { overflow: hidden; }
     padding: 0 4px;
     font-size: 10px;
 }
+.sn-console-badge {
+    color: #8aa0ff;
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    padding: 0 4px;
+    font-size: 10px;
+}
+.sn-log-console-body {
+    white-space: pre-wrap;
+    font-family: var(--monoFontFamily, ui-monospace, Menlo, Consolas, monospace);
+    font-size: 12px;
+    line-height: 1.45;
+    max-height: 260px;
+    overflow: auto;
+    margin-top: 3px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.28);
+    color: var(--sn-fg);
+}
 .sn-log-actions { display: flex; align-items: center; }
 .sn-quick-mute:hover { color: #e74c3c; }
+.sn-quick-copy:hover { color: #8aa0ff; }
 
 /* ---------- Empty state ---------- */
 .sn-empty {
@@ -358,6 +382,7 @@ body.sn-modal-open { overflow: hidden; }
 .sn-ap-fields.sn-disabled,
 .sn-ap-color-fields.sn-disabled,
 .sn-con-fields.sn-disabled,
+.sn-cc-fields.sn-disabled,
 .sn-rl-fields.sn-disabled,
 .sn-rlt-fields.sn-disabled { opacity: 0.45; pointer-events: none; }
 .sn-ap-color-fields,
@@ -393,6 +418,13 @@ body.sn-modal-open { overflow: hidden; }
 .sn-section-title i { color: var(--sn-accent); }
 .sn-section-title small { color: var(--sn-muted); font-weight: 400; }
 .sn-hint { color: var(--sn-muted); font-size: 11px; line-height: 1.4; }
+.sn-cc-levels {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin-top: 4px;
+}
+.sn-cc-levels .sn-checkbox { margin-top: 0; }
 
 /* ---------- Scrollbar ---------- */
 .sn-panel::-webkit-scrollbar { width: 8px; }
