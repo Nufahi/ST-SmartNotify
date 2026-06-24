@@ -26,22 +26,25 @@
     text-align: center;
 }
 
-/* ---------- Overlay ---------- */
-#smart-notify-overlay {
+/* ---------- Modal shell (display-toggle: robust on mobile) ---------- */
+.sn-hidden { display: none !important; }
+body.sn-modal-open { overflow: hidden; }
+
+#smart-notify-modal {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(2px);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
-    z-index: 9998;
+    z-index: 10000;
 }
-#smart-notify-overlay.show { opacity: 1; pointer-events: auto; }
+#smart-notify-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(2px);
+}
 
-/* ---------- Drawer ---------- */
+/* ---------- Drawer (side panel on desktop) ---------- */
 #smart-notify-drawer {
-    position: fixed;
+    position: absolute;
     top: 0;
     right: 0;
     height: 100%;
@@ -52,14 +55,16 @@
     color: var(--sn-fg);
     border-left: 1px solid var(--sn-border);
     box-shadow: -8px 0 30px rgba(0, 0, 0, 0.45);
-    transform: translateX(105%);
-    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
-    z-index: 9999;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     font-size: 14px;
+    animation: sn-slide-in 0.26s cubic-bezier(0.16, 1, 0.3, 1);
 }
-#smart-notify-drawer.open { transform: translateX(0); }
+@keyframes sn-slide-in {
+    from { transform: translateX(105%); }
+    to   { transform: translateX(0); }
+}
 
 /* ---------- Header ---------- */
 .sn-header {
@@ -141,6 +146,7 @@
     justify-content: space-between;
     gap: 8px;
 }
+.sn-toolbar-actions { display: flex; gap: 4px; }
 .sn-type-filters { display: flex; gap: 6px; flex-wrap: wrap; }
 .sn-filter-chip {
     width: 30px;
@@ -206,6 +212,13 @@
     padding: 0 4px;
     font-size: 10px;
 }
+.sn-rewritten-badge {
+    color: #b46cff;
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    padding: 0 4px;
+    font-size: 10px;
+}
 .sn-log-actions { display: flex; align-items: center; }
 .sn-quick-mute:hover { color: #e74c3c; }
 
@@ -257,7 +270,23 @@
 }
 .sn-rule-item.sn-rule-mute { border-left-color: #e74c3c; }
 .sn-rule-item.sn-rule-allow { border-left-color: #5cb85c; }
+.sn-rule-item.sn-rule-rewrite { border-left-color: #b46cff; }
 .sn-rule-item.sn-rule-off { opacity: 0.5; }
+.sn-rule-rewrite-to {
+    margin-top: 3px;
+    font-size: 11px;
+    color: var(--sn-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    word-break: break-word;
+}
+.sn-rule-rewrite-to code {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+}
 .sn-rule-info { flex: 1; min-width: 0; }
 .sn-rule-pattern {
     display: flex;
@@ -326,12 +355,44 @@
     margin-bottom: 4px;
 }
 .sn-ap-fields { display: flex; flex-direction: column; gap: 8px; }
-.sn-ap-fields.sn-disabled { opacity: 0.45; pointer-events: none; }
+.sn-ap-fields.sn-disabled,
+.sn-ap-color-fields.sn-disabled,
+.sn-con-fields.sn-disabled,
+.sn-rl-fields.sn-disabled,
+.sn-rlt-fields.sn-disabled { opacity: 0.45; pointer-events: none; }
+.sn-ap-color-fields,
+.sn-con-fields,
+.sn-rl-fields,
+.sn-rlt-fields { display: flex; flex-direction: column; gap: 8px; }
 .sn-row2 { display: flex; gap: 8px; }
 .sn-row2 > div { flex: 1; }
-.sn-hidden { display: none !important; }
 .sn-ap-buttons { display: flex; gap: 8px; margin-top: 10px; }
 .sn-ap-buttons .menu_button { flex: 1; justify-content: center; }
+.sn-ap-color-fields input[type="color"] {
+    width: 100%;
+    height: 34px;
+    padding: 2px;
+    border: 1px solid var(--sn-border);
+    border-radius: 6px;
+    background: rgba(255,255,255,0.05);
+    cursor: pointer;
+}
+
+/* ---------- More panel ---------- */
+.sn-more-form { display: flex; flex-direction: column; gap: 8px; }
+.sn-more-form label { font-size: 13px; color: var(--sn-fg); margin-top: 4px; }
+.sn-more-form input[type="range"] { width: 100%; accent-color: var(--sn-accent); }
+.sn-section-title {
+    font-weight: 700;
+    font-size: 13px;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.sn-section-title i { color: var(--sn-accent); }
+.sn-section-title small { color: var(--sn-muted); font-weight: 400; }
+.sn-hint { color: var(--sn-muted); font-size: 11px; line-height: 1.4; }
 
 /* ---------- Scrollbar ---------- */
 .sn-panel::-webkit-scrollbar { width: 8px; }
@@ -340,7 +401,42 @@
     border-radius: 4px;
 }
 
-/* ---------- Mobile ---------- */
-@media (max-width: 500px) {
-    #smart-notify-drawer { width: 100vw; max-width: 100vw; }
+/* ---------- Mobile / touch ---------- */
+/* Full-screen panel anchored below ST's top bar. No transforms — visibility is
+   a plain display toggle on #smart-notify-modal, so it always opens & closes. */
+@media (max-width: 768px), (pointer: coarse) {
+    #smart-notify-drawer {
+        position: relative;
+        top: auto;
+        right: auto;
+        left: auto;
+        width: 100vw;
+        max-width: 100vw;
+        height: calc(100vh - var(--topBarBlockSize, 0px));
+        height: calc(100dvh - var(--topBarBlockSize, 0px));
+        margin: var(--topBarBlockSize, 0px) 0 0;
+        border-left: none;
+        border-radius: 0;
+        box-shadow: none;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        animation: none;
+    }
+
+    /* bigger touch targets */
+    .sn-icon-btn { width: 38px; height: 38px; }
+    .sn-tab { padding: 14px 6px; font-size: 14px; }
+    .sn-filter-chip { width: 36px; height: 36px; }
+    .sn-switch { width: 44px; height: 24px; }
+    .sn-slider::before { height: 18px; width: 18px; }
+    .sn-switch input:checked + .sn-slider::before { transform: translateX(20px); }
+
+    /* the panel itself scrolls */
+    .sn-body { min-height: 0; }
+
+    /* tabs can wrap if cramped */
+    .sn-tabs { flex-wrap: wrap; }
+
+    /* rule add row stacks nicely */
+    .sn-rule-add-row { gap: 8px; }
+    .sn-rule-add-row .text_pole { min-width: 110px; }
 }
