@@ -33,19 +33,15 @@ you don't want — and restyle the ones you keep.
   window) and/or throttle the total toast rate (max N per X seconds). With
   **repeat grouping** on, bursts don't vanish silently — the existing log entry
   gets a devtools-style **×N counter** instead.
-- **Capture console → Log** — the *reverse* of mirroring. A toast often says
-  something terse like *"API returned an error"*, while the **full details**
-  (status, response body, stack trace) get printed to the browser console.
-  Turn this on to pull those detailed `console.error`/`warn`/`log` lines **into
-  the Smart Notify Log panel** so you can read and copy the real error without
-  opening devtools. Pick which console levels to capture; console entries get a
-  <i>terminal</i> chip and a copy button.
+- **Capture console → Log** — a toast often says something terse like *"API
+  returned an error"*, while the **full details** (status, response body, stack
+  trace) get printed to the browser console. Turn this on to pull those detailed
+  `console.error`/`warn`/`log` lines **into the Smart Notify Log panel** so you
+  can read and copy the real error without opening devtools. Pick which console
+  levels to capture; console entries get a <i>terminal</i> chip and a copy button.
+  There's also a one-tap **Dump log to console** button.
   > This reads the **browser** console only. The Termux/node **server** process
   > log lives in a separate process and can't be read from a page extension.
-- **Console mirror** — mirror every notification (full title + message) *out* to
-  the console. On PC that's the browser devtools console; on phone it's the
-  **Termux**/server log. Choose to log shown, blocked, or all. There's also a
-  one-tap **Dump log to console** button.
 - **Export / import** — back up and restore all rules and settings as JSON.
 - **Bilingual (EN / RU)** — the UI auto-detects your SillyTavern locale; Russian
   users get Russian, everyone else gets English. Strings live in `i18n/`.
@@ -63,8 +59,8 @@ you don't want — and restyle the ones you keep.
 4. **Rules tab** — add precise text/regex rules (mute / allow / rewrite), toggle
    or delete them.
 5. **Look tab** — enable *Override toast appearance* and tune position/size/colors.
-6. **More tab** — capture-console-into-log, console mirroring, anti-spam
-   (dedupe + throttle), and export/import of your config.
+6. **More tab** — capture-console-into-log, anti-spam (dedupe + grouping +
+   throttle), and export/import of your config.
 
 ## Installation
 
@@ -96,7 +92,7 @@ modules/settings.js         # defaults, deep merge, accessors
 modules/rules.js            # rule engine (match / rewrite / evaluate)
 modules/antispam.js         # burst dedupe + grouping + throttle
 modules/log.js              # notification log + repeat grouping
-modules/console-capture.js  # console mirror (out) + capture (in)
+modules/console-capture.js  # capture browser console into the log
 modules/appearance.js       # toast CSS overrides + drag-to-position
 modules/ui.js               # the drawer panel and all its renders
 ```

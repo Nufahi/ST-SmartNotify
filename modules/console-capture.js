@@ -1,33 +1,7 @@
-/* Console mirroring (out) + console capture (in). */
+/* Console capture: bring the detailed browser-console output into the log. */
 import { LOG_PREFIX, uid } from './constants.js';
 import { getSettings } from './settings.js';
 import { pushLog } from './log.js';
-
-// ---------------------------------------------------------------------
-// Console mirroring (devtools on PC, Termux on phone)
-// ---------------------------------------------------------------------
-export function mirrorToConsole(entry) {
-    const c = getSettings().console;
-    if (!c.mirror) return;
-    if (c.level === 'shown' && entry.blocked) return;
-    if (c.level === 'blocked' && !entry.blocked) return;
-
-    const ts = new Date(entry.time).toLocaleTimeString();
-    const status = entry.blocked
-        ? `BLOCKED${entry.ruleId ? ' (' + entry.ruleId + ')' : ''}`
-        : 'SHOWN';
-    const head = `${LOG_PREFIX} [${ts}] ${entry.type.toUpperCase()} ${status}`;
-    const full = [
-        head,
-        entry.title ? `  title:   ${entry.title}` : null,
-        entry.message ? `  message: ${entry.message}` : null,
-    ].filter(Boolean).join('\n');
-
-    const fn = entry.type === 'error' ? console.error
-             : entry.type === 'warning' ? console.warn
-             : console.log;
-    try { fn.call(console, full); } catch (e) { console.log(full); }
-}
 
 // ---------------------------------------------------------------------
 // Console CAPTURE: bring the detailed browser-console output into the log.

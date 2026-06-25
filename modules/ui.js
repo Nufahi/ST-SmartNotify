@@ -530,7 +530,6 @@ export function initUI(deps) {
     // ----- More panel -----
     function renderMore() {
         const settings = getSettings();
-        const c = settings.console;
         const cc = settings.consoleCapture;
         const rl = settings.rateLimit;
         const $m = $drawer.find('.sn-more-form');
@@ -550,22 +549,6 @@ export function initUI(deps) {
                     <label class="sn-checkbox"><input type="checkbox" class="sn-cc-lvl" data-lvl="log" ${cc.levels.log ? 'checked' : ''} /> <span>log</span></label>
                     <label class="sn-checkbox"><input type="checkbox" class="sn-cc-lvl" data-lvl="debug" ${cc.levels.debug ? 'checked' : ''} /> <span>debug</span></label>
                 </div>
-            </div>
-
-            <hr>
-            <div class="sn-section-title"><i class="fa-solid fa-share-from-square"></i> ${escapeHtml(t('more.mirrorTitle'))} <small>${escapeHtml(t('more.mirrorSub'))}</small></div>
-            <label class="sn-checkbox sn-big-toggle">
-                <input type="checkbox" id="sn-con-mirror" ${c.mirror ? 'checked' : ''} />
-                <span>${escapeHtml(t('more.mirrorToggle'))}</span>
-            </label>
-            <div class="sn-con-fields ${c.mirror ? '' : 'sn-disabled'}">
-                <label>${escapeHtml(t('more.mirrorWhich'))}</label>
-                <select class="text_pole" id="sn-con-level">
-                    <option value="all">${escapeHtml(t('more.mirrorAll'))}</option>
-                    <option value="shown">${escapeHtml(t('more.mirrorShown'))}</option>
-                    <option value="blocked">${escapeHtml(t('more.mirrorBlocked'))}</option>
-                </select>
-                <small class="sn-hint">${escapeHtml(t('more.mirrorHint'))}</small>
             </div>
 
             <hr>
@@ -602,11 +585,6 @@ export function initUI(deps) {
             </div>
             <input type="file" id="sn-import-file" accept="application/json,.json" class="sn-hidden" />
         `);
-        $('#sn-con-level').val(c.level);
-
-        const refreshConDisabled = () => $m.find('.sn-con-fields').toggleClass('sn-disabled', !c.mirror);
-        $('#sn-con-mirror').on('change', function () { c.mirror = this.checked; save(); refreshConDisabled(); });
-        $('#sn-con-level').on('change', function () { c.level = this.value; save(); });
 
         const refreshCcDisabled = () => $m.find('.sn-cc-fields').toggleClass('sn-disabled', !cc.enabled);
         $('#sn-cc-enabled').on('change', function () {
@@ -707,7 +685,6 @@ export function initUI(deps) {
         const settings = getSettings();
         $('#smart_notify_enabled').prop('checked', settings.enabled);
         $('#smart_notify_autoopen').prop('checked', settings.autoOpenOnNew);
-        $('#smart_notify_console_mirror').prop('checked', settings.console.mirror);
         $('#smart_notify_console_capture').prop('checked', settings.consoleCapture.enabled);
         TOAST_TYPES.forEach((ty) => {
             $(`#smart_notify_mute_${ty}`).prop('checked', settings.muteTypes[ty]);

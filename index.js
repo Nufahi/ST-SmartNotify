@@ -9,7 +9,7 @@ import { initSettings, getSettings, save } from './modules/settings.js';
 import { evaluate, applyRewrite } from './modules/rules.js';
 import { antiSpamBlock, resetAntiSpam } from './modules/antispam.js';
 import { pushLog } from './modules/log.js';
-import { mirrorToConsole, syncConsoleCapture, disposeConsole } from './modules/console-capture.js';
+import { syncConsoleCapture, disposeConsole } from './modules/console-capture.js';
 import { applyAppearanceCss, appearanceOptions, disposeAppearance } from './modules/appearance.js';
 import { initUI } from './modules/ui.js';
 
@@ -96,7 +96,6 @@ jQuery(async function () {
                 // When grouping, push with a window so identical repeats bump ×N.
                 const groupWindow = settings.rateLimit.groupRepeats ? settings.rateLimit.dedupeWindow : 0;
                 const didGroup = pushLog(entry, { groupWindow });
-                mirrorToConsole(entry);
 
                 // If anti-spam wanted to group but the log didn't actually collapse
                 // (e.g. the matching entry fell outside the window), don't silently
@@ -204,9 +203,6 @@ jQuery(async function () {
         $('#smart_notify_open_drawer').off('click.sn').on('click.sn', ui.openDrawer);
         $('#smart_notify_autoopen').prop('checked', settings.autoOpenOnNew).off('change.sn').on('change.sn', function () {
             settings.autoOpenOnNew = this.checked; save();
-        });
-        $('#smart_notify_console_mirror').prop('checked', settings.console.mirror).off('change.sn').on('change.sn', function () {
-            settings.console.mirror = this.checked; save();
         });
         $('#smart_notify_console_capture').prop('checked', settings.consoleCapture.enabled).off('change.sn').on('change.sn', function () {
             settings.consoleCapture.enabled = this.checked; save(); syncConsoleCapture();

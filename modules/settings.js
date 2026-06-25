@@ -36,12 +36,6 @@ export const defaultSettings = {
         throttleMax: 5,             // max toasts...
         throttleWindow: 5000,       // ...per this many ms
     },
-    // console mirroring (devtools / Termux)
-    console: {
-        mirror: false,              // mirror toasts to console
-        level: 'all',               // 'shown' | 'blocked' | 'all'
-        includeBlocked: true,       // (kept for forward-compat)
-    },
     // console CAPTURE: pull the detailed browser-console output (the full
     // error behind a terse toast) INTO the Smart Notify log.
     consoleCapture: {
