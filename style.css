@@ -188,6 +188,21 @@ body.sn-modal-open { overflow: hidden; }
 .sn-chip-blocked.on { color: var(--sn-muted); }
 .sn-chip-console.on { color: #8aa0ff; }
 
+/* ---------- Log search ---------- */
+.sn-search-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0;
+    padding: 0 2px;
+    color: var(--sn-muted);
+}
+.sn-search-row > i { flex: 0 0 auto; font-size: 12px; }
+.sn-search-row input.text_pole {
+    flex: 1;
+    min-width: 0;
+}
+
 /* ---------- Log items ---------- */
 .sn-log-list { display: flex; flex-direction: column; gap: 8px; }
 .sn-log-item {
@@ -217,6 +232,20 @@ body.sn-modal-open { overflow: hidden; }
 .sn-type-error .sn-log-icon { color: #e74c3c; }
 
 .sn-log-content { flex: 1; min-width: 0; }
+.sn-log-head { display: flex; align-items: center; gap: 6px; }
+.sn-log-head .sn-log-title { margin-bottom: 0; }
+.sn-count-badge {
+    flex: 0 0 auto;
+    background: var(--sn-accent);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 1.4;
+    padding: 0 6px;
+    border-radius: 9px;
+    min-width: 20px;
+    text-align: center;
+}
 .sn-log-title { font-weight: 600; margin-bottom: 2px; word-break: break-word; }
 .sn-log-msg { font-size: 13px; word-break: break-word; color: var(--sn-fg); }
 .sn-log-meta {
@@ -630,3 +659,42 @@ body.sn-modal-open { overflow: hidden; }
         align-items: flex-start;
     }
 }
+
+/* ---------- Drag-to-position ghost ---------- */
+#sn-drag-ghost {
+    position: fixed;
+    z-index: 100000;
+    min-width: 220px;
+    max-width: 80vw;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--sn-accent, #6c8cff);
+    color: #fff;
+    font-size: 13px;
+    line-height: 1.4;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+    border: 2px dashed rgba(255, 255, 255, 0.7);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    text-align: center;
+}
+#sn-drag-ghost:active { cursor: grabbing; }
+#sn-drag-ghost > i { font-size: 18px; }
+#sn-drag-ghost .sn-drag-confirm {
+    cursor: pointer;
+    border: none;
+    border-radius: 7px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #fff;
+    color: var(--sn-accent, #6c8cff);
+}
+#sn-drag-ghost .sn-drag-confirm:hover { opacity: 0.9; }
+.sn-drag-btn { justify-content: center; }

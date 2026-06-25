@@ -13,7 +13,8 @@ you don't want — and restyle the ones you keep.
   phones (anchored below SillyTavern's top bar, respects safe-area insets) with
   bigger touch targets. On desktop it's a side drawer.
 - **Live notification log** — a panel listing every toast (shown *and* blocked),
-  color-coded by type, with timestamps and *edited* markers.
+  color-coded by type, with timestamps and *edited* markers. A **search box**
+  filters the log live (handy when console capture fills it with detail).
 - **One-click mute** — hit the mute button on any logged notification to create a
   rule that hides future matches.
 - **Rule engine** — match by plain text or `/regex/i`, scoped to a specific type
@@ -24,11 +25,14 @@ you don't want — and restyle the ones you keep.
   Per-rule hit counters.
 - **Global type mute** — instantly silence all `info`, `success`, etc.
 - **Appearance overrides** — change toast **position** (including a fully custom
-  X/Y), **width**, **font size**, **display duration** (0 = sticky), **opacity**,
-  and a full **color/theme override** (background, text, border color, border
-  width, corner radius).
-- **Anti-spam** — drop identical toasts fired in a burst (configurable window)
-  and/or throttle the total toast rate (max N per X seconds).
+  X/Y you can set by **dragging a ghost** to where toasts should appear),
+  **width**, **font size**, **display duration** (0 = sticky), **opacity**, and a
+  full **color/theme override** (background, text, border color, border width,
+  corner radius).
+- **Anti-spam** — collapse identical toasts fired in a burst (configurable
+  window) and/or throttle the total toast rate (max N per X seconds). With
+  **repeat grouping** on, bursts don't vanish silently — the existing log entry
+  gets a devtools-style **×N counter** instead.
 - **Capture console → Log** — the *reverse* of mirroring. A toast often says
   something terse like *"API returned an error"*, while the **full details**
   (status, response body, stack trace) get printed to the browser console.
@@ -79,6 +83,23 @@ restored if the extension is reloaded.
 
 > Note: notifications that don't go through `toastr` (e.g. native browser alerts)
 > are outside this extension's reach.
+
+## Project layout
+
+The code is split into ES modules loaded by `index.js` (the entry point):
+
+```
+index.js                    # entry: toastr interception + wiring
+modules/constants.js        # shared constants & small helpers
+modules/i18n.js             # translation layer
+modules/settings.js         # defaults, deep merge, accessors
+modules/rules.js            # rule engine (match / rewrite / evaluate)
+modules/antispam.js         # burst dedupe + grouping + throttle
+modules/log.js              # notification log + repeat grouping
+modules/console-capture.js  # console mirror (out) + capture (in)
+modules/appearance.js       # toast CSS overrides + drag-to-position
+modules/ui.js               # the drawer panel and all its renders
+```
 
 ## License
 
