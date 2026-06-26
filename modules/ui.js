@@ -52,7 +52,6 @@ export function initUI(deps) {
                         <div class="sn-toolbar">
                             <div class="sn-type-filters"></div>
                             <div class="sn-toolbar-actions">
-                                <div class="sn-icon-btn" id="sn-dump-console" data-i18n-title="log.dumpConsole" title="Dump log to console"><i class="fa-solid fa-terminal"></i></div>
                                 <div class="sn-icon-btn" id="sn-clear-log" data-i18n-title="log.clear" title="Clear log"><i class="fa-solid fa-trash"></i></div>
                             </div>
                         </div>
@@ -298,19 +297,6 @@ export function initUI(deps) {
 
     $drawer.on('click', '#sn-clear-log', function () { clearLog(); renderLog(); });
 
-    $drawer.on('click', '#sn-dump-console', function () {
-        const lines = notifLog.slice().reverse().map((e) => {
-            const ts = new Date(e.time).toLocaleTimeString();
-            const status = e.blocked ? `BLOCKED${e.ruleId ? ' (' + e.ruleId + ')' : ''}` : 'SHOWN';
-            const rep = (e.count && e.count > 1) ? ` x${e.count}` : '';
-            const ttl = e.title ? ` | ${e.title}` : '';
-            const m = e.message ? ` | ${e.message}` : '';
-            return `[${ts}] ${e.type.toUpperCase()} ${status}${rep}${ttl}${m}`;
-        });
-        console.log(`${LOG_PREFIX} ===== LOG DUMP (${lines.length}) =====\n` + lines.join('\n') + `\n${LOG_PREFIX} ===== END DUMP =====`);
-        toastrSafe('info', t('toast.dumped', { count: lines.length }), t('app'));
-    });
-
     // ----- rules -----
     function renderRules() {
         const settings = getSettings();
@@ -506,14 +492,16 @@ export function initUI(deps) {
         $('#sn-ap-color').on('change', function () {
             a.colorOverride = this.checked; applyAppearanceCss(); save(); refreshColorDisabled();
         });
-        $('#sn-ap-bg').on('input', function () { a.bgColor = this.value; applyAppearanceCss(); save(); });
-        $('#sn-ap-text').on('input', function () { a.textColor = this.value; applyAppearanceCss(); save(); });
-        $('#sn-ap-border').on('input', function () { a.borderColor = this.value; applyAppearanceCss(); save(); });
+        // Manually editing any colour means it no longer matches a preset.
+        const markCustomTheme = () => { getSettings().theme = 'none'; };
+        $('#sn-ap-bg').on('input', function () { a.bgColor = this.value; markCustomTheme(); applyAppearanceCss(); save(); });
+        $('#sn-ap-text').on('input', function () { a.textColor = this.value; markCustomTheme(); applyAppearanceCss(); save(); });
+        $('#sn-ap-border').on('input', function () { a.borderColor = this.value; markCustomTheme(); applyAppearanceCss(); save(); });
         $('#sn-ap-bw').on('input', function () {
-            a.borderWidth = parseInt(this.value); $('#sn-ap-bw-val').text(a.borderWidth + 'px'); applyAppearanceCss(); save();
+            a.borderWidth = parseInt(this.value); $('#sn-ap-bw-val').text(a.borderWidth + 'px'); markCustomTheme(); applyAppearanceCss(); save();
         });
         $('#sn-ap-br').on('input', function () {
-            a.borderRadius = parseInt(this.value); $('#sn-ap-br-val').text(a.borderRadius + 'px'); applyAppearanceCss(); save();
+            a.borderRadius = parseInt(this.value); $('#sn-ap-br-val').text(a.borderRadius + 'px'); markCustomTheme(); applyAppearanceCss(); save();
         });
         $('#sn-ap-test').on('click', function () {
             const merged = Object.assign({}, appearanceOptions());
@@ -523,6 +511,7 @@ export function initUI(deps) {
             stopPositionDrag();
             const settings = getSettings();
             settings.appearance = mergeSettings(defaultSettings.appearance, {});
+            settings.theme = 'none';
             applyAppearanceCss(); save(); renderAppearance();
         });
     }
@@ -692,13 +681,36 @@ export function initUI(deps) {
     }
 
     // ----- react to new log entries -----
+    // Coalesce bursts of log events into a single re-render per frame. Without
+    // this, a flood of notifications/console lines would trigger one full DOM
+    // rebuild *per event*, pinning the CPU and freezing the tab.
+    let renderScheduled = false;
+    function scheduleRender() {
+        if (renderScheduled) return;
+        renderScheduled = true;
+        const run = () => {
+            renderScheduled = false;
+            if (!drawerOpen) return;
+            const activeTab = $drawer.find('.sn-tab.active').data('tab');
+            if (activeTab === 'log') renderLog();
+            if (activeTab === 'rules') renderRules();
+        };
+        if (typeof requestAnimationFrame === 'function') requestAnimationFrame(run);
+        else setTimeout(run, 16);
+    }
     const onLog = () => {
         if (!drawerOpen) { bumpBadge(); return; }
-        const activeTab = $drawer.find('.sn-tab.active').data('tab');
-        if (activeTab === 'log') renderLog();
-        if (activeTab === 'rules') renderRules();
+        scheduleRender();
     };
     logListeners.add(onLog);
+
+    // Re-render the Look tab if it's currently open (e.g. after a theme preset
+    // is applied from the Extensions settings panel).
+    function syncAppearancePanel() {
+        if (!drawerOpen) return;
+        const activeTab = $drawer.find('.sn-tab.active').data('tab');
+        if (activeTab === 'appearance') renderAppearance();
+    }
 
     // init
     renderTypeFilters();
@@ -713,7 +725,7 @@ export function initUI(deps) {
 
     return {
         openDrawer, closeDrawer, toggleDrawer,
-        renderMasterToggle, syncSettingsPanel,
+        renderMasterToggle, syncSettingsPanel, syncAppearancePanel,
         bumpBadge, isOpen: () => drawerOpen,
         dispose, $modal,
     };

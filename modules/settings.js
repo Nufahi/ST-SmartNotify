@@ -5,6 +5,8 @@ export const SETTINGS_VERSION = 2;
 
 export const defaultSettings = {
     enabled: true,
+    // ready-made colour preset id (see modules/themes.js). 'none' = native look.
+    theme: 'none',
     // global mute by type
     muteTypes: { success: false, info: false, warning: false, error: false },
     // rules: [{ id, pattern, isRegex, type, action ('mute'|'allow'|'rewrite'), replacement, enabled, hits }]

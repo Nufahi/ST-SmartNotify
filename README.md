@@ -23,6 +23,10 @@ you don't want — and restyle the ones you keep.
   - **allow** (force-show, overriding mutes), or
   - **rewrite** the toast text (plain replace or regex with `$1` groups).
   Per-rule hit counters.
+- **Notification themes** — one-tap colour presets (Dark, Light, Coffee, Nude,
+  Dracula, Midnight, Forest, Rose, Ocean, AMOLED, Sunset, Mono) picked from a
+  swatch grid right in the **Extensions** settings card. Fine-tune any preset
+  afterwards in the panel's Look tab.
 - **Global type mute** — instantly silence all `info`, `success`, etc.
 - **Appearance overrides** — change toast **position** (including a fully custom
   X/Y you can set by **dragging a ghost** to where toasts should appear),
@@ -39,14 +43,14 @@ you don't want — and restyle the ones you keep.
   `console.error`/`warn`/`log` lines **into the Smart Notify Log panel** so you
   can read and copy the real error without opening devtools. Pick which console
   levels to capture; console entries get a <i>terminal</i> chip and a copy button.
-  There's also a one-tap **Dump log to console** button.
   > This reads the **browser** console only. The Termux/node **server** process
   > log lives in a separate process and can't be read from a page extension.
 - **Export / import** — back up and restore all rules and settings as JSON.
 - **Bilingual (EN / RU)** — the UI auto-detects your SillyTavern locale; Russian
   users get Russian, everyone else gets English. Strings live in `i18n/`.
 - **Polished settings block** — a clean card in the **Extensions** tab with the
-  open-panel button and grouped toggles (general, mute-by-type, console).
+  open-panel button, the theme swatch grid, and grouped toggles (general,
+  mute-by-type, console).
 - Everything persists in your SillyTavern settings.
 
 ## Usage
@@ -55,7 +59,7 @@ you don't want — and restyle the ones you keep.
 2. Open the panel from the **wand menu** (the magic-wand icon near the chat bar)
    → **Smart Notify**, or via *Extensions → Smart Notify → Open panel*.
 3. **Log tab** — watch notifications arrive; click the mute icon to silence
-   anything like it, or the terminal icon to dump the log to console.
+   anything like it.
 4. **Rules tab** — add precise text/regex rules (mute / allow / rewrite), toggle
    or delete them.
 5. **Look tab** — enable *Override toast appearance* and tune position/size/colors.
