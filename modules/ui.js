@@ -5,6 +5,7 @@ import { t, i18nApplyDom } from './i18n.js';
 import { compileRegex } from './rules.js';
 import { notifLog, logListeners, clearLog } from './log.js';
 import { syncConsoleCapture } from './console-capture.js';
+import { THEMES, THEME_NONE, applyTheme } from './themes.js';
 import {
     applyAppearanceCss, appearanceOptions,
     startPositionDrag, stopPositionDrag, isDragging,
@@ -376,11 +377,51 @@ export function initUI(deps) {
         if (ev.key === 'Enter') $('#sn-rule-add-btn').trigger('click');
     });
 
+    // ----- toast theme swatches (inside the Look tab) -----
+    function themeGridHtml() {
+        const current = getSettings().theme || THEME_NONE;
+        let cards = `
+            <div class="sn-theme-card sn-theme-none ${current === THEME_NONE ? 'is-active' : ''}"
+                 role="button" tabindex="0" data-theme="${THEME_NONE}" title="${escapeHtml(t('themes.none'))}">
+                <div class="sn-theme-preview"><i class="fa-solid fa-ban"></i></div>
+                <div class="sn-theme-name">${escapeHtml(t('themes.none'))}</div>
+            </div>`;
+        THEMES.forEach((th) => {
+            const name = escapeHtml(t(th.name));
+            cards += `
+            <div class="sn-theme-card ${current === th.id ? 'is-active' : ''}"
+                 role="button" tabindex="0" data-theme="${escapeHtml(th.id)}" title="${name}"
+                 style="--sn-card-bg:${th.bgColor};--sn-card-fg:${th.textColor};--sn-card-bd:${th.borderColor};">
+                <div class="sn-theme-preview">
+                    <span class="sn-tp-dot"></span>
+                    <span class="sn-tp-lines"><span class="sn-tp-bar"></span><span class="sn-tp-bar short"></span></span>
+                </div>
+                <div class="sn-theme-name">${name}</div>
+            </div>`;
+        });
+        return cards;
+    }
+
+    function wireThemeGrid() {
+        const $grid = $drawer.find('.sn-theme-grid');
+        const pick = function () {
+            applyTheme(this.getAttribute('data-theme'));
+            renderAppearance(); // reflect new colours in the fields + active card
+        };
+        $grid.find('.sn-theme-card').on('click', pick).on('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick.call(this); }
+        });
+    }
+
     // ----- appearance panel -----
     function renderAppearance() {
         const a = getSettings().appearance;
         const $f = $drawer.find('.sn-appearance-form');
         $f.html(`
+            <div class="sn-section-title"><i class="fa-solid fa-palette"></i> ${escapeHtml(t('look.themeHeading'))}</div>
+            <small class="sn-hint">${escapeHtml(t('look.themeDesc'))}</small>
+            <div class="sn-theme-grid">${themeGridHtml()}</div>
+            <hr>
             <label class="sn-checkbox sn-big-toggle">
                 <input type="checkbox" id="sn-ap-override" ${a.override ? 'checked' : ''} />
                 <span>${escapeHtml(t('look.override'))}</span>
@@ -514,6 +555,8 @@ export function initUI(deps) {
             settings.theme = 'none';
             applyAppearanceCss(); save(); renderAppearance();
         });
+
+        wireThemeGrid();
     }
 
     // ----- More panel -----

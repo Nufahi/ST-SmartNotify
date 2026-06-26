@@ -5,8 +5,13 @@ export const SETTINGS_VERSION = 2;
 
 export const defaultSettings = {
     enabled: true,
-    // ready-made colour preset id (see modules/themes.js). 'none' = native look.
+    // ready-made colour preset id for the TOASTS (see modules/themes.js).
+    // 'none' = native look.
     theme: 'none',
+    // ready-made colour preset id for the Smart Notify PANEL itself
+    // (the drawer opened from the wand menu). 'default' = follow ST theme
+    // (translucent, blurred). Any other id paints a solid, opaque panel.
+    panelTheme: 'default',
     // global mute by type
     muteTypes: { success: false, info: false, warning: false, error: false },
     // rules: [{ id, pattern, isRegex, type, action ('mute'|'allow'|'rewrite'), replacement, enabled, hits }]

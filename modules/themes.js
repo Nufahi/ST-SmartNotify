@@ -171,3 +171,95 @@ export function applyTheme(id) {
     save();
     return true;
 }
+
+/* ============================================================
+ * PANEL themes — restyle the Smart Notify drawer itself (the modal opened
+ * from the wand menu), not the toasts.
+ *
+ * 'default' follows SillyTavern's theme variables (translucent + blur).
+ * Every other preset paints a SOLID, fully opaque panel (no blur), driven by
+ * CSS variables injected onto #smart-notify-modal plus the .sn-solid class.
+ * ============================================================ */
+export const PANEL_THEME_DEFAULT = 'default';
+
+// id -> palette. `name` is an i18n key (panelThemes.<id>).
+// bg = panel surface, fg = text, accent = highlights/active tab, border = lines.
+export const PANEL_THEMES = [
+    { id: 'dark',     name: 'panelThemes.dark',     bg: '#15171c', fg: '#e7e9ee', accent: '#6c8cff', border: '#2b2f39' },
+    { id: 'light',    name: 'panelThemes.light',    bg: '#f7f8fb', fg: '#1d2024', accent: '#3b6cff', border: '#d9dde6' },
+    { id: 'coffee',   name: 'panelThemes.coffee',   bg: '#241812', fg: '#f3e3d3', accent: '#d8a05a', border: '#5e3d28' },
+    { id: 'nude',     name: 'panelThemes.nude',     bg: '#efe3d8', fg: '#4a3b30', accent: '#bd8a63', border: '#d8c3ad' },
+    { id: 'dracula',  name: 'panelThemes.dracula',  bg: '#282a36', fg: '#f8f8f2', accent: '#bd93f9', border: '#44475a' },
+    { id: 'midnight', name: 'panelThemes.midnight', bg: '#0d1422', fg: '#d7e3ff', accent: '#4d8dff', border: '#1f3a66' },
+    { id: 'forest',   name: 'panelThemes.forest',   bg: '#10211a', fg: '#d8f0df', accent: '#4cc77f', border: '#2f6b48' },
+    { id: 'rose',     name: 'panelThemes.rose',     bg: '#25131d', fg: '#ffe1ec', accent: '#ff6f9c', border: '#5a2a3c' },
+    { id: 'ocean',    name: 'panelThemes.ocean',    bg: '#0a1f2c', fg: '#d4f1f9', accent: '#34b6e0', border: '#1c4a5e' },
+    { id: 'amoled',   name: 'panelThemes.amoled',   bg: '#000000', fg: '#eaeaea', accent: '#8a9cff', border: '#262626' },
+    { id: 'sunset',   name: 'panelThemes.sunset',   bg: '#271320', fg: '#ffe9d6', accent: '#ff8a4c', border: '#5a2f3a' },
+    { id: 'mono',     name: 'panelThemes.mono',     bg: '#1b1b1b', fg: '#fafafa', accent: '#fafafa', border: '#3a3a3a' },
+];
+
+export function getPanelThemeById(id) {
+    return PANEL_THEMES.find((t) => t.id === id) || null;
+}
+
+let panelStyleEl = null;
+function ensurePanelStyleEl() {
+    if (panelStyleEl && document.head.contains(panelStyleEl)) return panelStyleEl;
+    panelStyleEl = document.getElementById('smart-notify-panel-theme-style');
+    if (!panelStyleEl) {
+        panelStyleEl = document.createElement('style');
+        panelStyleEl.id = 'smart-notify-panel-theme-style';
+        document.head.appendChild(panelStyleEl);
+    }
+    return panelStyleEl;
+}
+
+/**
+ * Apply a panel theme by id. 'default' (or unknown) restores ST-driven look.
+ * Solid themes inject opaque CSS variables and add the .sn-solid class so the
+ * stylesheet drops the translucency/blur.
+ * @returns {boolean}
+ */
+export function applyPanelTheme(id) {
+    const settings = getSettings();
+    settings.panelTheme = id || PANEL_THEME_DEFAULT;
+    const el = ensurePanelStyleEl();
+    const modal = document.getElementById('smart-notify-modal');
+
+    if (!id || id === PANEL_THEME_DEFAULT) {
+        el.textContent = '';
+        if (modal) modal.classList.remove('sn-solid');
+        save();
+        return true;
+    }
+
+    const th = getPanelThemeById(id);
+    if (!th) {
+        settings.panelTheme = PANEL_THEME_DEFAULT;
+        el.textContent = '';
+        if (modal) modal.classList.remove('sn-solid');
+        save();
+        return false;
+    }
+
+    // Solid, opaque surface. We also derive a muted fg and subtle tints so the
+    // existing component styles (chips, cards, hovers) keep working.
+    el.textContent = `
+#smart-notify-modal.sn-solid {
+    --sn-bg: ${th.bg};
+    --sn-fg: ${th.fg};
+    --sn-accent: ${th.accent};
+    --sn-border: ${th.border};
+}`;
+    if (modal) modal.classList.add('sn-solid');
+    save();
+    return true;
+}
+
+/** Remove the injected panel-theme <style> (for hot-reload disposal). */
+export function disposePanelTheme() {
+    if (panelStyleEl) { try { panelStyleEl.remove(); } catch (e) { /* noop */ } panelStyleEl = null; }
+    const el = document.getElementById('smart-notify-panel-theme-style');
+    if (el) el.remove();
+}

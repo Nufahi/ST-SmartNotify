@@ -11,7 +11,7 @@ import { antiSpamBlock, resetAntiSpam } from './modules/antispam.js';
 import { pushLog } from './modules/log.js';
 import { syncConsoleCapture, disposeConsole } from './modules/console-capture.js';
 import { applyAppearanceCss, appearanceOptions, disposeAppearance } from './modules/appearance.js';
-import { THEMES, THEME_NONE, applyTheme } from './modules/themes.js';
+import { PANEL_THEMES, PANEL_THEME_DEFAULT, applyPanelTheme, disposePanelTheme } from './modules/themes.js';
 import { initUI } from './modules/ui.js';
 
 jQuery(async function () {
@@ -189,28 +189,28 @@ jQuery(async function () {
     // -----------------------------------------------------------------
     // Extensions settings panel (settings.html)
     // -----------------------------------------------------------------
-    function renderThemeGrid() {
-        const $grid = $('#smart_notify_theme_grid');
+    function renderPanelThemeGrid() {
+        const $grid = $('#smart_notify_panel_theme_grid');
         if ($grid.length === 0) return;
         $grid.empty();
 
-        const current = settings.theme || THEME_NONE;
+        const current = settings.panelTheme || PANEL_THEME_DEFAULT;
 
-        // "None" card first — keeps ST's native toast look.
-        const $none = $(`
-            <div class="sn_theme_card sn_theme_none ${current === THEME_NONE ? 'is_active' : ''}"
-                 role="button" tabindex="0" data-theme="${THEME_NONE}" title="${t('themes.none')}">
-                <div class="sn_theme_preview"><i class="fa-solid fa-ban"></i></div>
-                <div class="sn_theme_name">${t('themes.none')}</div>
+        // "Default" card first — follows ST theme (translucent / blurred).
+        const $def = $(`
+            <div class="sn_theme_card sn_theme_none ${current === PANEL_THEME_DEFAULT ? 'is_active' : ''}"
+                 role="button" tabindex="0" data-theme="${PANEL_THEME_DEFAULT}" title="${t('panelThemes.default')}">
+                <div class="sn_theme_preview"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                <div class="sn_theme_name">${t('panelThemes.default')}</div>
             </div>`);
-        $grid.append($none);
+        $grid.append($def);
 
-        THEMES.forEach((th) => {
+        PANEL_THEMES.forEach((th) => {
             const name = t(th.name);
             const $card = $(`
                 <div class="sn_theme_card ${current === th.id ? 'is_active' : ''}"
                      role="button" tabindex="0" data-theme="${th.id}" title="${name}"
-                     style="--sn-card-bg:${th.bgColor};--sn-card-fg:${th.textColor};--sn-card-bd:${th.borderColor};">
+                     style="--sn-card-bg:${th.bg};--sn-card-fg:${th.fg};--sn-card-bd:${th.border};">
                     <div class="sn_theme_preview">
                         <span class="sn_tp_dot"></span>
                         <span class="sn_tp_lines">
@@ -225,10 +225,9 @@ jQuery(async function () {
 
         const pick = function () {
             const id = this.getAttribute('data-theme');
-            applyTheme(id);
+            applyPanelTheme(id);
             $grid.find('.sn_theme_card').removeClass('is_active');
             $(this).addClass('is_active');
-            ui.syncAppearancePanel();
         };
         $grid.find('.sn_theme_card').on('click', pick).on('keydown', function (e) {
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick.call(this); }
@@ -238,7 +237,7 @@ jQuery(async function () {
     function wireSettingsPanel() {
         const $enabled = $('#smart_notify_enabled');
         if ($enabled.length === 0) return false; // not injected yet
-        renderThemeGrid();
+        renderPanelThemeGrid();
         $enabled.prop('checked', settings.enabled).off('change.sn').on('change.sn', function () {
             settings.enabled = this.checked; save(); ui.renderMasterToggle();
         });
@@ -280,6 +279,7 @@ jQuery(async function () {
     // Init
     // -----------------------------------------------------------------
     applyAppearanceCss();
+    applyPanelTheme(settings.panelTheme);
     syncConsoleCapture();
 
     console.log(`${LOG_PREFIX} initialized.`);
@@ -291,6 +291,7 @@ jQuery(async function () {
         try { restoreToastr(); } catch (e) { /* noop */ }
         try { disposeConsole(); } catch (e) { /* noop */ }
         try { disposeAppearance(); } catch (e) { /* noop */ }
+        try { disposePanelTheme(); } catch (e) { /* noop */ }
         try { ui.dispose(); } catch (e) { /* noop */ }
         try { resetAntiSpam(); } catch (e) { /* noop */ }
         clearInterval(wireTimer);

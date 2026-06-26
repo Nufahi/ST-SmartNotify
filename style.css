@@ -68,6 +68,19 @@ body.sn-modal-open { overflow: hidden; }
     to   { transform: translateX(0); }
 }
 
+/* ---------- Solid (opaque) panel theme ---------- */
+/* When a panel theme is picked, the modal gets .sn-solid and CSS vars are
+   injected (see modules/themes.js). Drop translucency + blur so it's opaque. */
+#smart-notify-modal.sn-solid #smart-notify-drawer {
+    background: var(--sn-bg);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+#smart-notify-modal.sn-solid #smart-notify-backdrop {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
 /* ---------- Header ---------- */
 .sn-header {
     display: flex;
@@ -455,6 +468,101 @@ body.sn-modal-open { overflow: hidden; }
     background: rgba(255,255,255,0.05);
     cursor: pointer;
 }
+
+/* ---------- Theme grid (inside Look tab) ---------- */
+.sn-theme-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    gap: 8px;
+    margin-top: 2px;
+}
+.sn-theme-card {
+    --sn-card-bg: #16181d;
+    --sn-card-fg: #e7e9ee;
+    --sn-card-bd: #2c2f38;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 7px;
+    cursor: pointer;
+    border-radius: 11px;
+    border: 1px solid var(--sn-border);
+    background: rgba(255, 255, 255, 0.04);
+    transition: border-color 0.15s ease, transform 0.08s ease, box-shadow 0.15s ease;
+    user-select: none;
+}
+.sn-theme-card:hover {
+    border-color: color-mix(in srgb, var(--sn-accent) 45%, var(--sn-border) 55%);
+    transform: translateY(-1px);
+}
+.sn-theme-card:active { transform: scale(0.98); }
+.sn-theme-card.is-active {
+    border-color: var(--sn-accent);
+    box-shadow: 0 0 0 1px var(--sn-accent), 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+.sn-theme-card.is-active::after {
+    content: "\f00c";
+    font-family: "Font Awesome 6 Free", "Font Awesome 5 Free";
+    font-weight: 900;
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 17px;
+    height: 17px;
+    line-height: 17px;
+    text-align: center;
+    font-size: 9px;
+    border-radius: 50%;
+    color: #fff;
+    background: var(--sn-accent);
+}
+.sn-theme-preview {
+    height: 42px;
+    border-radius: 7px;
+    background: var(--sn-card-bg);
+    border: 1.5px solid var(--sn-card-bd);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0 8px;
+    overflow: hidden;
+}
+.sn-theme-preview .sn-tp-dot {
+    flex: 0 0 auto;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--sn-card-bd);
+}
+.sn-theme-preview .sn-tp-lines {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+.sn-theme-preview .sn-tp-bar {
+    height: 5px;
+    border-radius: 3px;
+    background: var(--sn-card-fg);
+}
+.sn-theme-preview .sn-tp-bar.short { width: 60%; opacity: 0.55; }
+.sn-theme-name {
+    font-size: 11px;
+    text-align: center;
+    color: var(--sn-fg);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+.sn-theme-card.sn-theme-none .sn-theme-preview {
+    justify-content: center;
+    background:
+        repeating-linear-gradient(45deg,
+            rgba(255, 255, 255, 0.08) 0 6px, transparent 6px 12px),
+        rgba(255, 255, 255, 0.03);
+}
+.sn-theme-card.sn-theme-none .sn-theme-preview i { color: var(--sn-muted); font-size: 15px; }
 
 /* ---------- More panel ---------- */
 .sn-more-form { display: flex; flex-direction: column; gap: 8px; }

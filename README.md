@@ -23,10 +23,14 @@ you don't want — and restyle the ones you keep.
   - **allow** (force-show, overriding mutes), or
   - **rewrite** the toast text (plain replace or regex with `$1` groups).
   Per-rule hit counters.
-- **Notification themes** — one-tap colour presets (Dark, Light, Coffee, Nude,
-  Dracula, Midnight, Forest, Rose, Ocean, AMOLED, Sunset, Mono) picked from a
-  swatch grid right in the **Extensions** settings card. Fine-tune any preset
-  afterwards in the panel's Look tab.
+- **Panel themes** — restyle the Smart Notify **panel itself** with one-tap
+  presets (Default, Dark, Light, Coffee, Nude, Dracula, Midnight, Forest, Rose,
+  Ocean, AMOLED, Sunset, Mono) from a swatch grid in the **Extensions** settings
+  card. Any preset (except Default) makes the panel **fully opaque** — no more
+  translucency/blur.
+- **Toast themes** — the same kind of one-tap colour presets for the **toasts**,
+  picked from a swatch grid in the panel's **Look** tab. Fine-tune any preset
+  afterwards with the colour controls below it.
 - **Global type mute** — instantly silence all `info`, `success`, etc.
 - **Appearance overrides** — change toast **position** (including a fully custom
   X/Y you can set by **dragging a ghost** to where toasts should appear),
@@ -62,7 +66,8 @@ you don't want — and restyle the ones you keep.
    anything like it.
 4. **Rules tab** — add precise text/regex rules (mute / allow / rewrite), toggle
    or delete them.
-5. **Look tab** — enable *Override toast appearance* and tune position/size/colors.
+5. **Look tab** — pick a toast theme preset, then enable *Override toast
+   appearance* and tune position/size/colors.
 6. **More tab** — capture-console-into-log, anti-spam (dedupe + grouping +
    throttle), and export/import of your config.
 
